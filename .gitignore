@@ -1,0 +1,71 @@
+# -------------------------
+# Java / Kotlin / Maven / Gradle
+# -------------------------
+target/
+build/
+.gradle/
+out/
+.kotlin/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# -------------------------
+# IDEs
+# -------------------------
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+.idea/modules.xml
+.idea/compiler.xml
+.idea/libraries/
+.idea/jarRepositories.xml
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+# -------------------------
+# OS
+# -------------------------
+.DS_Store
+Thumbs.db
+
+# -------------------------
+# Logs / temporary files
+# -------------------------
+*.log
+logs/
+tmp/
+*.tmp
+*.bak
+
+# -------------------------
+# Node.js / frontend (if applicable)
+# -------------------------
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+**/build/
+npm-debug.log*
+yarn-error.log*

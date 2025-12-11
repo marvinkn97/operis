@@ -1,0 +1,21 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: operis-user-service
+
+  config:
+    import: optional:configserver:/
+
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: operis-configuration-server
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

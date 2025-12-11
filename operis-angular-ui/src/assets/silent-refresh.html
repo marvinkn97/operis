@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Silent Refresh</title>
+  </head>
+  <body>
+    <script>
+      // This script is required by angular-oauth2-oidc for silent refresh
+      window.parent.postMessage(window.location.href, window.location.origin);
+    </script>
+  </body>
+</html>

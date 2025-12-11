@@ -1,0 +1,16 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: operis-api-gateway
+
+  config:
+    import: optional:configserver:/
+
+  cloud:
+    config:
+      discovery:
+        service-id: operis-configuration-server
+        enabled: true
+

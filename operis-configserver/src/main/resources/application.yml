@@ -1,0 +1,24 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: operis-configuration-server
+
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/marvinkn97/operis-configuration-repo.git
+          default-label: master
+
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${random.value}
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+

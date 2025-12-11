@@ -1,0 +1,92 @@
+networks:
+  operis-network:
+    driver: bridge
+
+volumes:
+  keycloak-data:
+  postgres-keycloak-data:
+  postgres-project-data:
+  postgres-user-data:
+  pgadmin-data:
+
+services:
+  postgres-operis-keycloak:
+    container_name: operis-postgres-keycloak
+    image: postgres:latest
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keycloak_db
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres-keycloak-data:/var/lib/postgresql/data
+    networks:
+      - operis-network
+
+  keycloak:
+    container_name: operis-keycloak
+    image: quay.io/keycloak/keycloak:latest
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: password
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres-operis-keycloak
+      KC_DB_URL_DATABASE: keycloak_db
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: password
+    command: start-dev
+    ports:
+      - "9090:8080"
+    depends_on:
+      - postgres-operis-keycloak
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+    networks:
+      - operis-network
+
+  pgadmin:
+    image: dpage/pgadmin4:7
+    container_name: operis-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@operis.com
+      PGADMIN_DEFAULT_PASSWORD: password
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres-operis-keycloak
+      - postgres-operis-project
+    networks:
+      - operis-network
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    restart: unless-stopped
+
+  postgres-operis-project:
+    container_name: postgres-operis-project
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: operis_project_db
+    volumes:
+      - postgres-project-data:/var/lib/postgresql/data
+    ports:
+      - "54321:5432"
+    networks:
+      - operis-network
+    restart: unless-stopped
+
+  postgres-operis-user:
+    container_name: postgres-operis-user
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: operis_user_db
+    volumes:
+      - postgres-user-data:/var/lib/postgresql/data
+    ports:
+      - "54322:5432"
+    networks:
+      - operis-network
+    restart: unless-stopped
