@@ -16,6 +16,12 @@ import { RouterModule } from '@angular/router';
         <a routerLink="/projects" class="text-gray-700 hover:text-blue-700 font-medium">
           Projects
         </a>
+         <a routerLink="/action-center" class="text-gray-700 hover:text-blue-700 font-medium">
+          Action Center
+        </a>
+         <a routerLink="/profile" class="text-gray-700 hover:text-blue-700 font-medium">
+          Profile
+        </a>
 
         <button
           (click)="openLogoutModal()"
@@ -42,6 +48,21 @@ import { RouterModule } from '@angular/router';
         class="text-gray-800 hover:text-blue-700 font-medium"
       >
         Projects
+      </a>
+      <a
+        routerLink="/action-center"
+        (click)="toggleMenu()"
+        class="text-gray-800 hover:text-blue-700 font-medium"
+      >
+        Action Center
+      </a>
+
+      <a
+        routerLink="/profile"
+        (click)="toggleMenu()"
+        class="text-gray-800 hover:text-blue-700 font-medium"
+      >
+        Profile
       </a>
 
       <button

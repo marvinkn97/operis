@@ -37,5 +37,4 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
                 WHERE p.archived = false
             """)
     List<UUID> findActiveProjectIds();
-
 }

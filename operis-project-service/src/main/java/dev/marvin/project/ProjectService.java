@@ -95,7 +95,6 @@ public class ProjectService {
         return new PageImpl<>(pageContent, pageable, projectEntities.size());
     }
 
-
     @Transactional(readOnly = true)
     public ProjectResponse getProject(UUID projectId) {
         log.info("Retrieving project with id {}", projectId);
@@ -126,6 +125,4 @@ public class ProjectService {
         projectRepository.save(projectEntity);
         log.info("Project {} archived", projectEntity.getName());
     }
-
-
 }

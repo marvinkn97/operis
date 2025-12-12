@@ -1,19 +1,26 @@
 package dev.marvin;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import lombok.Builder;
+import lombok.Data;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.util.UUID;
 
+@Data
+@Builder
+@Document(collection = "call_to_actions")
 public class CallToActionEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(length = 36, updatable = false, nullable = false)
+    @MongoId
     private UUID id;
-
-    /** JSON metadata for generic UI behavior */
-    @Column(columnDefinition = "json")
+    private CallToActionType type;
+    private CallToActionStatus status;
+    private CallToActionTarget target;
+    private String userId;
+    /**
+     * JSON metadata for generic UI behavior
+     */
     private String metadata;
+
+
 }

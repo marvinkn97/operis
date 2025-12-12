@@ -11,30 +11,7 @@ Users can manage their accounts and switch between **Free** and **Premium** mode
 ---
 
 ## Features
-
-### Free Features
-
-#### 1. Account Creation
-- Register with:
-    - Email (used as login)
-    - Password 
----
-
-#### 2. User Profile Update
-- Profile fields:
-    - First name (required)
-    - Last name (required)
-    - Email (**cannot be modified**)
-    - Date of birth
-- Only first name and last name are mandatory during updates.
-
----
-
-#### 3. Project Listing
-- Retrieve all projects associated with the current user.
-
----
-
+ 
 #### 4. Project Management
 
 A project contains:
@@ -50,22 +27,6 @@ A project contains:
 - During modification:
     - Members and tasks can be added, updated, and deleted.
 
-##### Deletion
-- Deletion is performed by **archiving** the project.
-- Conditions:
-    - Only the project creator can delete the project.
-    - The project must exist.
-    - **All tasks must be completed**.
-        - If at least one task is unfinished, an error will be returned.
-
----
-
-#### 5. Member Management
-
-- A member must already have a registered user account to be added to a project.
-- All members have **admin privileges** within the project.
-
----
 
 #### 6. Task Management
 

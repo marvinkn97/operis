@@ -18,12 +18,12 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       const oauthService = inject(OAuthService);
       oauthService.configure(authConfig);
-      oauthService.setupAutomaticSilentRefresh()
+      oauthService.setupAutomaticSilentRefresh();
       return oauthService.loadDiscoveryDocumentAndTryLogin().then(() => {
-    // Optional: clean URL after login
-    if (oauthService.hasValidAccessToken()) {
-      window.history.replaceState({}, document.title, '/projects');
-    }
+    // Only remove OAuth login params from the URL, keep the current page
+      if (window.location.search.includes('code=')) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
   });
     }),
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },

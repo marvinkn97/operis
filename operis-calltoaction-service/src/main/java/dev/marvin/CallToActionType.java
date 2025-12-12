@@ -4,7 +4,8 @@ import lombok.Getter;
 
 @Getter
 public enum CallToActionType {
-    PROJECT_INVITATION("Project Invitation");
+    PROJECT_INVITATION("Project Invitation"),
+    TASK_ASSIGNMENT("Task Assignment");
 
     private final String value;
 
