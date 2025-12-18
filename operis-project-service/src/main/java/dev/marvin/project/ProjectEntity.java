@@ -24,7 +24,6 @@ import java.util.UUID;
 public class ProjectEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(length = 36, updatable = false, nullable = false)
     private UUID id;
 
     @Column(nullable = false)
@@ -34,12 +33,12 @@ public class ProjectEntity {
     private String description;
 
     @Column(name = "owner_id", nullable = false)
-    private String ownerId;
+    private UUID ownerId;
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "project_members", joinColumns = @JoinColumn(name = "project_id"))
     @Column(name = "member_id", nullable = false)
-    private List<String> memberIds = new ArrayList<>();
+    private List<UUID> memberIds = new ArrayList<>();
 
     @Builder.Default
     private Integer totalTasks = 0;
@@ -60,13 +59,13 @@ public class ProjectEntity {
 
     @CreatedBy
     @Column(updatable = false, nullable = false)
-    private String createdBy;
+    private UUID createdBy;
 
     @LastModifiedBy
     @Column(insertable = false)
-    private String updatedBy;
+    private UUID updatedBy;
 
-    public void addMember(String memberId) {
+    public void addMember(UUID memberId) {
         if (!memberIds.contains(memberId)) {
             memberIds.add(memberId);
         }

@@ -7,6 +7,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,7 +20,7 @@ import java.time.Instant;
 public class UserEntity {
     @Id
     @Column(updatable = false, nullable = false)
-    private String id;
+    private UUID id;
 
     @Column(nullable = false)
     private String firstName;

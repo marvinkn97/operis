@@ -1,30 +1,38 @@
 package dev.marvin;
 
-import io.swagger.v3.oas.models.Components;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.context.annotation.Bean;
+import dev.marvin.email.EmailService;
+import dev.marvin.notification.EmailNotificationRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
-@SpringBootApplication
-@EnableDiscoveryClient
+@Service
+@RequiredArgsConstructor
+@Slf4j
 public class NotificationService {
-    static void main(String[] args) {
-        SpringApplication.run(NotificationService.class, args);
-    }
+    private final EmailService emailService;
+    private final TemplateEngine templateEngine;
 
-    @Bean
-    public OpenAPI openAPI(Components components) {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("Operis Notification Service API")
-                        .description("API documentation for Operis Notification Service")
-                        .version("1.0"))
-                .components(components)
-                .addSecurityItem(new SecurityRequirement().addList("keycloak"));
-    }
+    @Value("${operis.frontend-url}")
+    private String frontendUrl;
 
+    public void sendProjectInvitationEmail(EmailNotificationRequest emailNotificationRequest) {
+        // Prepare Thymeleaf context
+        Context context = new Context();
+        context.setVariable("recipientName", emailNotificationRequest.recipientName());
+        context.setVariable("projectName", emailNotificationRequest.projectName());
+        context.setVariable("projectDescription", emailNotificationRequest.projectDescription());
+        context.setVariable("frontendUrl", frontendUrl);
+
+        String templateName = "project-invitation.html";
+
+        // Render template
+        String htmlBody = templateEngine.process(templateName, context);
+
+        emailService.sendEmail(emailNotificationRequest.recipientEmail(), "Project Invitation", htmlBody);
+
+    }
 }

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Project Invitation | Operis</title>
+</head>
+<body style="font-family:'Inter', Arial, sans-serif; background-color:#f3f4f6; margin:0; padding:20px;">
+<div style="max-width:600px; margin:0 auto; background-color:#ffffff; padding:24px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+
+    <!-- Greeting -->
+    <p style="font-size:16px; color:#374151; margin-bottom:16px;">
+        Hello <strong th:text="${recipientName}" style="color:#1f2937;">User</strong>,
+    </p>
+
+    <!-- Invitation Header -->
+    <h1 style="font-size:24px; font-weight:700; color:#1e40af; margin-bottom:16px;">
+        You've been invited to a project!
+    </h1>
+
+    <!-- Project Info -->
+    <p style="color:#374151; font-size:16px; margin-bottom:8px;">
+        <strong>Project Name:</strong> <span th:text="${projectName}">Project Name</span>
+    </p>
+    <p style="color:#4b5563; font-size:16px; margin-bottom:20px;" th:text="${projectDescription}">
+        Project description goes here...
+    </p>
+
+    <!-- Action Center Info Box -->
+    <div style="background-color:#eef2ff; border-left:4px solid #6366f1; padding:16px; border-radius:8px; margin-bottom:24px;">
+
+        <p style="color:#1e3a8a; font-size:14px; line-height:1.5; margin-bottom:12px;">
+            ✅ To accept this invitation, please log in to the application.
+        </p>
+
+        <p style="color:#1e3a8a; font-size:14px; line-height:1.5; margin-bottom:12px;">
+            ⚠️ Please note that this invitation is linked to the email address it was sent to.
+            Kindly use the same email to access the application.
+        </p>
+
+        <a th:href="${frontendUrl}" target="_blank"
+           style="display:inline-block; background-color:#4f46e5; color:#ffffff; font-weight:600; padding:10px 20px; border-radius:8px; text-decoration:none; text-align:center; font-size:14px; margin-bottom:12px;">
+            Open Application
+        </a>
+
+        <p style="color:#1e3a8a; font-size:14px; line-height:1.5;">
+            Then go to your <strong>Action Center</strong> to accept the invitation.
+        </p>
+
+    </div>
+
+
+    <!-- Footer -->
+    <hr style="border:none; border-top:1px solid #e5e7eb; margin-bottom:12px;"/>
+    <p style="color:#9ca3af; font-size:12px; text-align:center;">
+        Operis Project Management System
+    </p>
+
+</div>
+</body>
+</html>

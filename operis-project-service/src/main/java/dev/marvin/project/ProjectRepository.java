@@ -18,7 +18,7 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
                 WHERE p.ownerId = :ownerId
                   AND p.archived = :archived
             """)
-    List<ProjectEntity> findAllWithMembers(@Param("ownerId") String ownerId, @Param("archived") Boolean archived);
+    List<ProjectEntity> findAllWithMembers(@Param("ownerId") UUID ownerId, @Param("archived") Boolean archived);
 
 
     @Query("""

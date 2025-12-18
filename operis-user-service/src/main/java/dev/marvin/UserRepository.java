@@ -5,8 +5,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface UserRepository extends JpaRepository<UserEntity, String> {
-    List<UserEntity> findAllByIdIn(Collection<String> ids);
+public interface UserRepository extends JpaRepository<UserEntity, UUID> {
+    List<UserEntity> findAllByIdIn(Collection<UUID> ids);
 }

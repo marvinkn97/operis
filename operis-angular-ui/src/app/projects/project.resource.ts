@@ -6,8 +6,10 @@ import { ProjectRequest } from './project.request';
 import { ProjectUpdateRequest } from './project-update.request';
 
 @Injectable({ providedIn: 'root' })
-export class ProjectResource {
+export class ProjectResource {  
   constructor(private http: HttpClient) {}
+
+  private readonly baseUrl = 'http://localhost:39919/api/v1/projects';
 
   projects = signal<Project[]>([]);
   loading = signal(false);
@@ -30,7 +32,7 @@ export class ProjectResource {
       .set('pageSize', size.toString());
 
     this.http
-      .get<PagedProjectResponse>('http://localhost:43519/api/v1/projects', { params })
+      .get<PagedProjectResponse>(this.baseUrl, { params })
       .subscribe({
         next: (data) => {
           const items = data?._embedded?.projectResponseList ?? [];
@@ -55,18 +57,18 @@ export class ProjectResource {
   }
 
   createProject(project: ProjectRequest) {
-    return this.http.post<void>('http://localhost:43519/api/v1/projects', project);
+    return this.http.post<void>(this.baseUrl, project);
   }
 
   updateProject(id: string, project: ProjectUpdateRequest) {
-    return this.http.put<void>(`http://localhost:43519/api/v1/projects/${id}`, project);
+    return this.http.put<void>(`${this.baseUrl}/${id}`, project);
   }
 
   deleteProject(id: string) {
-    return this.http.delete<void>(`http://localhost:43519/api/v1/projects/${id}`);
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
   getProjectById(id: string) {
-  return this.http.get<Project>(`http://localhost:43519/api/v1/projects/${id}`);
+  return this.http.get<Project>(`${this.baseUrl}/${id}`);
 }
 }

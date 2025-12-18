@@ -5,9 +5,12 @@ import dev.marvin.user.UserResponse;
 import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,14 +26,14 @@ import java.util.UUID;
 public class ProjectService {
     private final ProjectRepository projectRepository;
     private final RestTemplate restTemplate;
-//    private final UserFeignClient userFeignClient;
+//    private final UserClient userFeignClient;
 
     private static final String PROJECT_NOT_FOUND = "Project with given id [%s] not found";
 
     @Transactional
     public void createProject(ProjectRequest projectRequest, Authentication authentication) {
-        String ownerId =  authentication.getName();
-        log.info("Creating project {} with owner {}", projectRequest, ownerId.substring(0, 4).concat("..."));
+        UUID ownerId =  UUID.fromString(authentication.getName());
+        log.info("Creating project {} for user {}", projectRequest, authentication.getName());
         ProjectEntity projectEntity = ProjectEntity.builder()
                 .name(projectRequest.name())
                 .description(projectRequest.description())
@@ -47,8 +50,9 @@ public class ProjectService {
         ProjectEntity projectEntity = projectRepository.findByIdAndArchived(projectId, false)
                 .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND.formatted(projectId)));
 
+        UUID ownerId = UUID.fromString(authentication.getName());
 
-        if (!projectEntity.getOwnerId().equals(authentication.getName())) {
+        if (!projectEntity.getOwnerId().equals(ownerId)) {
             throw new BadRequestException("Only the project owner can modify this project");
         }
 
@@ -77,14 +81,11 @@ public class ProjectService {
     public Page<ProjectResponse> getProjects(Pageable pageable, Authentication authentication) {
         log.info("Retrieving projects for user {}", authentication.getName());
 
-        //make a rest call to task service to get task count for given project id
-        List<UUID> activeProjectIds = projectRepository.findActiveProjectIds();
-
-
-        List<ProjectResponse> projectEntities = projectRepository.findAllWithMembers(authentication.getName(), false).stream()
+        UUID ownerId = UUID.fromString(authentication.getName());
+        List<ProjectResponse> projectEntities = projectRepository.findAllWithMembers(ownerId, false).stream()
                 .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt())) // latest first
                 .map(projectEntity ->
-                        new ProjectResponse(projectEntity.getId(), projectEntity.getName(), projectEntity.getDescription(), projectEntity.getProgressPercentage(), 0, projectEntity.getMemberIds().size()))
+                        new ProjectResponse(projectEntity.getId(), projectEntity.getName(), projectEntity.getDescription(), projectEntity.getProgressPercentage(), projectEntity.getTotalTasks(), projectEntity.getMemberIds().size()))
                 .toList();
 
         int start = (int) pageable.getOffset();
@@ -100,8 +101,17 @@ public class ProjectService {
         log.info("Retrieving project with id {}", projectId);
         return projectRepository.findByIdWithMembers(projectId)
                 .map(projectEntity -> {
-                    List<UserResponse> members = restTemplate.getForObject("http://operis-user-service/by-ids", List.class, projectEntity.getMemberIds());
-
+                    log.info("API call to user service");
+                    ResponseEntity<List<UserResponse>> response =
+                            restTemplate.exchange(
+                                    "http://operis-user-service/api/v1/users/by-Ids?ids={ids}",
+                                    HttpMethod.GET,
+                                    null,
+                                    new ParameterizedTypeReference<>() {
+                                    },
+                                    projectEntity.getMemberIds()
+                            );
+                    List<UserResponse> members = response.getBody();
                     return new ProjectResponse(projectEntity.getId(), projectEntity.getName(), projectEntity.getDescription(), projectEntity.getProgressPercentage(), List.of(), members);
                 })
                 .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND.formatted(projectId)));
@@ -113,7 +123,9 @@ public class ProjectService {
         ProjectEntity projectEntity = projectRepository.findByIdAndArchived(projectId, false)
                 .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND.formatted(projectId)));
 
-        if (!projectEntity.getOwnerId().equals(authentication.getName())) {
+        UUID ownerId = UUID.fromString(authentication.getName());
+
+        if (!projectEntity.getOwnerId().equals(ownerId)) {
             throw new BadRequestException("Only the project owner can modify this project");
         }
 
@@ -125,4 +137,6 @@ public class ProjectService {
         projectRepository.save(projectEntity);
         log.info("Project {} archived", projectEntity.getName());
     }
+
+
 }

@@ -1,5 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { User } from '../user.model';
+import { UsersResource } from '../users.resource';
 
 @Component({
   selector: 'app-profile-page',
@@ -145,10 +147,14 @@ import { FormsModule } from '@angular/forms';
     </div>
   `,
 })
-export class Profile {
-  profile = signal({ firstName: 'John', lastName: 'Doe', email: 'johndoe@example.com' });
+export class Profile implements OnInit {
+  profile = signal<User>({
+    id: '',
+    firstName: '',
+    lastName: '',
+    email: ''
+  });
 
-  // Separate signals for password fields
   newPassword = '';
   confirmPassword = '';
 
@@ -158,15 +164,37 @@ export class Profile {
   updateSuccessMessage = signal<string | null>(null);
   updateErrorMessage = signal<string | null>(null);
 
+  constructor(private usersResource: UsersResource) {}
+
+  ngOnInit() {
+    this.loadProfile();
+  }
+
+  // --- Load authenticated user ---
+  loadProfile() {
+    this.usersResource.getAuthenticatedUser().subscribe({
+      next: (user) => {
+        this.profile.set(user);
+      },
+      error: () => {
+        this.updateErrorMessage.set('Failed to load profile');
+        setTimeout(() => this.updateErrorMessage.set(null), 3000);
+      },
+    });
+  }
+
   // --- Name methods ---
   updateName() {
     this.editingName.set(false);
     this.updateSuccessMessage.set('Name updated successfully!');
     setTimeout(() => this.updateSuccessMessage.set(null), 3000);
+
+    // 🔜 hook update-name API here later
   }
 
   cancelName() {
     this.editingName.set(false);
+    this.loadProfile(); // restore original values
   }
 
   // --- Password methods ---
@@ -184,13 +212,13 @@ export class Profile {
     }
 
     this.editingPassword.set(false);
-
-    // Reset fields
     this.newPassword = '';
     this.confirmPassword = '';
 
     this.updateSuccessMessage.set('Password updated successfully!');
     setTimeout(() => this.updateSuccessMessage.set(null), 3000);
+
+    // 🔜 hook password update API here later
   }
 
   cancelPassword() {

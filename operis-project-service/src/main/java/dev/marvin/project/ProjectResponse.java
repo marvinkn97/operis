@@ -1,7 +1,7 @@
 package dev.marvin.project;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import dev.marvin.user.TaskResponse;
+import dev.marvin.task.TaskResponse;
 import dev.marvin.user.UserResponse;
 
 import java.util.List;

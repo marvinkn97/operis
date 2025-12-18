@@ -1,4 +1,4 @@
-package dev.marvin.user;
+package dev.marvin.task;
 
 public record TaskResponse() {
 }

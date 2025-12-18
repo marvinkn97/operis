@@ -10,20 +10,6 @@ Users can manage their accounts and switch between **Free** and **Premium** mode
 
 ---
 
-## Features
- 
-#### 4. Project Management
-
-A project contains:
-- **Owner**
-- **Name**
-- **Description**
-- **Members**
-- **Tasks**
-
-##### Modification
-- All fields are individually modifiable except:
-    - **Owner (cannot be changed)**
 - During modification:
     - Members and tasks can be added, updated, and deleted.
 
@@ -31,10 +17,6 @@ A project contains:
 #### 6. Task Management
 
 Tasks contain:
-- **Title** (required)
-- **Description**
-- **Owner** (required – the logged-in user who created the task)
-- **Assigned user**
 - **Status**
 - **History**
 

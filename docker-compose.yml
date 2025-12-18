@@ -8,6 +8,8 @@ volumes:
   postgres-project-data:
   postgres-user-data:
   pgadmin-data:
+  maildev-data:
+
 
 services:
   postgres-operis-keycloak:
@@ -90,3 +92,15 @@ services:
     networks:
       - operis-network
     restart: unless-stopped
+
+  maildev:
+    container_name: operis-maildev
+    image: maildev/maildev:latest
+    restart: unless-stopped
+    ports:
+      - "1080:1080"   # Web UI
+      - "1025:1025"   # SMTP
+    volumes:
+      - maildev-data:/home/node/maildev
+    networks:
+      - operis-network
