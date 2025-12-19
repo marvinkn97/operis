@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
   imports: [],
   template: `
     <div class="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <h1 class="text-4xl font-bold text-gray-800 mb-4">Welcome to Operis Project Management</h1>
+      <h1 class="text-4xl font-bold text-gray-800 mb-4 p-3">Welcome to Operis Project Management</h1>
       <p class="text-lg text-gray-600 mb-8 text-center max-w-xl">
         Manage your projects efficiently, track tasks, and collaborate seamlessly with your team.
       </p>

@@ -5,17 +5,16 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.NonNull;
+import jakarta.annotation.Nonnull;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +36,7 @@ public class UserController {
                     description = "Users retrieved successfully",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
     })
-    public ResponseEntity<List<UserResponse>> getUsersByIds(@RequestParam @NonNull List<UUID> ids) {
+    public ResponseEntity<List<UserResponse>> getUsersByIds(@RequestParam @Nonnull List<UUID> ids) {
         log.info("User lookup requested for ids: {}", ids);
         return ResponseEntity.ok(userService.getUsersByIds(ids));
     }
@@ -55,5 +54,36 @@ public class UserController {
         Optional<UserResponse> authenticatedUserDetails = userService.getAuthenticatedUserDetails(authentication);
         return authenticatedUserDetails.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
     }
+
+
+    @PreAuthorize("hasRole('USER')")
+    @Operation(
+            summary = "Update authenticated user's name",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Name updated successfully",
+                            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
+            }
+    )
+    @PutMapping("/me/name")
+    public ResponseEntity<Void> updateMyName(@NonNull Authentication authentication, @Valid @RequestBody NameUpdateRequest request) {
+        userService.updateAuthenticatedUserName(authentication, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @Operation(
+            summary = "Update authenticated user's password",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Password updated successfully")
+            }
+    )
+    @PutMapping("/me/password")
+    public ResponseEntity<Void> updateMyPassword(@NonNull Authentication authentication, @Valid @RequestBody PasswordUpdateRequest request) {
+        userService.updateAuthenticatedUserPassword(authentication, request);
+        return ResponseEntity.ok().build();
+    }
+
 
 }

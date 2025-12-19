@@ -45,4 +45,5 @@ public class UserApplication implements AuditorAware<UUID> {
 
         return Optional.empty();
     }
+
 }

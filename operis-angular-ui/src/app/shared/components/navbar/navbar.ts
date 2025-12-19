@@ -16,12 +16,10 @@ import { RouterModule } from '@angular/router';
         <a routerLink="/projects" class="text-gray-700 hover:text-blue-700 font-medium">
           Projects
         </a>
-         <a routerLink="/action-center" class="text-gray-700 hover:text-blue-700 font-medium">
+        <a routerLink="/action-center" class="text-gray-700 hover:text-blue-700 font-medium">
           Action Center
         </a>
-         <a routerLink="/profile" class="text-gray-700 hover:text-blue-700 font-medium">
-          Profile
-        </a>
+        <a routerLink="/profile" class="text-gray-700 hover:text-blue-700 font-medium"> Profile </a>
 
         <button
           (click)="openLogoutModal()"
@@ -33,15 +31,16 @@ import { RouterModule } from '@angular/router';
       </div>
 
       <!-- Mobile Hamburger -->
+      @if (isLoggedIn()) {
       <button class="md:hidden text-gray-600 hover:text-black text-3xl" (click)="toggleMenu()">
         ☰
       </button>
+      }
     </nav>
 
     <!-- Mobile Dropdown Menu -->
-    @if (mobileMenuOpen()) {
+    @if (mobileMenuOpen() && isLoggedIn()) {
     <div class="md:hidden bg-white shadow-md px-6 py-4 flex flex-col gap-4">
-      @if (isLoggedIn()) {
       <a
         routerLink="/projects"
         (click)="toggleMenu()"
@@ -71,7 +70,6 @@ import { RouterModule } from '@angular/router';
       >
         Logout
       </button>
-      }
     </div>
     }
 

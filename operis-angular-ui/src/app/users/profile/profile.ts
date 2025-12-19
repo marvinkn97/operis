@@ -2,6 +2,8 @@ import { Component, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { User } from '../user.model';
 import { UsersResource } from '../users.resource';
+import { OAuthService } from 'angular-oauth2-oidc';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-profile-page',
@@ -152,7 +154,7 @@ export class Profile implements OnInit {
     id: '',
     firstName: '',
     lastName: '',
-    email: ''
+    email: '',
   });
 
   newPassword = '';
@@ -164,7 +166,7 @@ export class Profile implements OnInit {
   updateSuccessMessage = signal<string | null>(null);
   updateErrorMessage = signal<string | null>(null);
 
-  constructor(private usersResource: UsersResource) {}
+  constructor(private usersResource: UsersResource, private authService: AuthService) {}
 
   ngOnInit() {
     this.loadProfile();
@@ -185,16 +187,33 @@ export class Profile implements OnInit {
 
   // --- Name methods ---
   updateName() {
-    this.editingName.set(false);
-    this.updateSuccessMessage.set('Name updated successfully!');
-    setTimeout(() => this.updateSuccessMessage.set(null), 3000);
+    const { firstName, lastName } = this.profile();
 
-    // 🔜 hook update-name API here later
+    if (!firstName || !lastName) {
+      this.updateErrorMessage.set('First name and last name are required');
+      return;
+    }
+
+    this.editingName.set(false);
+
+    this.usersResource.updateMyName({ firstName, lastName }).subscribe({
+      next: () => {
+        // 🔑 re-fetch from backend
+        this.loadProfile();
+
+        this.updateSuccessMessage.set('Name updated successfully!');
+        setTimeout(() => this.updateSuccessMessage.set(null), 3000);
+      },
+      error: () => {
+        this.updateErrorMessage.set('Failed to update name');
+        setTimeout(() => this.updateErrorMessage.set(null), 3000);
+      },
+    });
   }
 
   cancelName() {
     this.editingName.set(false);
-    this.loadProfile(); // restore original values
+    this.loadProfile(); // reload latest from backend if user cancels edits
   }
 
   // --- Password methods ---
@@ -211,14 +230,25 @@ export class Profile implements OnInit {
       return;
     }
 
-    this.editingPassword.set(false);
-    this.newPassword = '';
-    this.confirmPassword = '';
+    this.usersResource
+      .updateMyPassword({
+        newPassword: this.newPassword,
+      })
+      .subscribe({
+        next: () => {
+          this.editingPassword.set(false);
+          this.newPassword = '';
+          this.confirmPassword = '';
 
-    this.updateSuccessMessage.set('Password updated successfully!');
-    setTimeout(() => this.updateSuccessMessage.set(null), 3000);
-
-    // 🔜 hook password update API here later
+          this.updateSuccessMessage.set('Password updated successfully!');
+          setTimeout(() => this.updateSuccessMessage.set(null), 3000);
+          this.authService.logout();
+        },
+        error: () => {
+          this.updateErrorMessage.set('Failed to update password');
+          setTimeout(() => this.updateErrorMessage.set(null), 3000);
+        },
+      });
   }
 
   cancelPassword() {
