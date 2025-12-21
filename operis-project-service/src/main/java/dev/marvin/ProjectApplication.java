@@ -14,7 +14,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -38,12 +38,6 @@ public class ProjectApplication implements AuditorAware<UUID> {
                 .components(components);
     }
 
-    @Bean
-    @LoadBalanced
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-
     @Override
     public Optional<UUID> getCurrentAuditor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -54,4 +48,19 @@ public class ProjectApplication implements AuditorAware<UUID> {
 
         return Optional.empty();
     }
+
+    @LoadBalanced
+    @Bean
+    public RestClient restClient() {
+        return RestClient.builder()
+                .requestInitializer(request -> {
+                    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                    if (auth instanceof JwtAuthenticationToken jwtAuth) {
+                        request.getHeaders()
+                                .setBearerAuth(jwtAuth.getToken().getTokenValue());
+                    }
+                })
+                .build();
+    }
+
 }

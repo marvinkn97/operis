@@ -4,14 +4,14 @@ import { Observable } from 'rxjs';
 import { User } from './user.model';
 import { NameUpdateRequest } from './name-update.request';
 import { PasswordUpdateRequest } from './password-update.request';
+import { PagedUserResponse } from './paged-user-response.model';
 
 @Injectable({ providedIn: 'root' })
 export class UsersResource {
-  private readonly baseUrl = 'http://localhost:33465/api/v1/users';
+  private readonly baseUrl = 'http://localhost:37871/api/v1/users';
 
   constructor(private http: HttpClient) {}
 
-  
   /**
    * GET /api/v1/users/me
    */
@@ -19,7 +19,7 @@ export class UsersResource {
     return this.http.get<User>(`${this.baseUrl}/me`);
   }
 
-    /** PUT /me/name */
+  /** PUT /me/name */
   updateMyName(request: NameUpdateRequest): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/me/name`, request);
   }
@@ -28,4 +28,21 @@ export class UsersResource {
   updateMyPassword(request: PasswordUpdateRequest): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/me/password`, request);
   }
+
+  /**
+   * GET /api/v1/users/by-Ids
+   */
+
+  getUsersByIds(ids: string[], pageNumber = 0, pageSize = 10): Observable<PagedUserResponse> {
+    let params = new HttpParams()
+      .set('pageNumber', pageNumber.toString())
+      .set('pageSize', pageSize.toString());
+
+    ids.forEach(id => {
+      params = params.append('ids', id);
+    });
+
+    return this.http.get<PagedUserResponse>(`${this.baseUrl}/by-Ids`, { params });
+  }
+
 }

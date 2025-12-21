@@ -10,6 +10,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +33,7 @@ import java.util.UUID;
 @Tag(name = "Users API", description = "Operations for managing users")
 public class UserController {
     private final UserService userService;
+    private final PagedResourcesAssembler<UserResponse> assembler;
 
     @GetMapping("/by-Ids")
     @PreAuthorize("hasRole('USER')")
@@ -36,9 +43,13 @@ public class UserController {
                     description = "Users retrieved successfully",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
     })
-    public ResponseEntity<List<UserResponse>> getUsersByIds(@RequestParam @Nonnull List<UUID> ids) {
+    public ResponseEntity<PagedModel<EntityModel<UserResponse>>> getUsersByIds(
+            @RequestParam(name = "ids") @Nonnull List<UUID> ids,
+            @RequestParam(name = "pageNumber", required = false, defaultValue = "0") int pageNumber,
+            @RequestParam(name = "pageSize", required = false, defaultValue = "10") int pageSize) {
         log.info("User lookup requested for ids: {}", ids);
-        return ResponseEntity.ok(userService.getUsersByIds(ids));
+        Page<UserResponse> page = userService.getUsersByIds(ids, PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.ASC, "firstName")));
+        return ResponseEntity.ok(assembler.toModel(page));
     }
 
     @GetMapping("/me")

@@ -4,13 +4,16 @@ server:
 spring:
   application:
     name: operis-configuration-server
-
+  profiles:
+    active: git
   cloud:
     config:
       server:
         git:
           uri: https://github.com/marvinkn97/operis-configuration-repo.git
           default-label: master
+          clone-on-start: true
+          force-pull: true
 
 eureka:
   instance:
@@ -21,4 +24,9 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
 

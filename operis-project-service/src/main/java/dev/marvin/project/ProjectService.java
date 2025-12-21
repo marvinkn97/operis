@@ -1,20 +1,16 @@
 package dev.marvin.project;
 
 import dev.marvin.ResourceNotFoundException;
-import dev.marvin.user.UserResponse;
 import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,14 +21,13 @@ import java.util.UUID;
 @Slf4j
 public class ProjectService {
     private final ProjectRepository projectRepository;
-    private final RestTemplate restTemplate;
-//    private final UserClient userFeignClient;
+    private final RestClient restClient;
 
     private static final String PROJECT_NOT_FOUND = "Project with given id [%s] not found";
 
     @Transactional
     public void createProject(ProjectRequest projectRequest, Authentication authentication) {
-        UUID ownerId =  UUID.fromString(authentication.getName());
+        UUID ownerId = UUID.fromString(authentication.getName());
         log.info("Creating project {} for user {}", projectRequest, authentication.getName());
         ProjectEntity projectEntity = ProjectEntity.builder()
                 .name(projectRequest.name())
@@ -100,20 +95,7 @@ public class ProjectService {
     public ProjectResponse getProject(UUID projectId) {
         log.info("Retrieving project with id {}", projectId);
         return projectRepository.findByIdWithMembers(projectId)
-                .map(projectEntity -> {
-                    log.info("API call to user service");
-                    ResponseEntity<List<UserResponse>> response =
-                            restTemplate.exchange(
-                                    "http://operis-user-service/api/v1/users/by-Ids?ids={ids}",
-                                    HttpMethod.GET,
-                                    null,
-                                    new ParameterizedTypeReference<>() {
-                                    },
-                                    projectEntity.getMemberIds()
-                            );
-                    List<UserResponse> members = response.getBody();
-                    return new ProjectResponse(projectEntity.getId(), projectEntity.getName(), projectEntity.getDescription(), projectEntity.getProgressPercentage(), List.of(), members);
-                })
+                .map(projectEntity -> new ProjectResponse(projectEntity.getId(), projectEntity.getName(), projectEntity.getDescription(), projectEntity.getOwnerId(), projectEntity.getProgressPercentage(), projectEntity.getTotalTasks(), projectEntity.getMemberIds().size(), projectEntity.getMemberIds()))
                 .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND.formatted(projectId)));
     }
 

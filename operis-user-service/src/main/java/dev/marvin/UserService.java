@@ -4,6 +4,8 @@ import dev.marvin.user.UserResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,11 +22,9 @@ public class UserService {
     private final KeycloakAdminClientService keycloakAdminClientService;
 
     @Transactional(readOnly = true)
-    public List<UserResponse> getUsersByIds(List<UUID> ids) {
-        return userRepository.findAllById(ids)
-                .stream()
-                .map(userEntity -> new UserResponse(userEntity.getId(), userEntity.getFirstName(), userEntity.getLastName(), userEntity.getEmail()))
-                .toList();
+    public Page<UserResponse> getUsersByIds(List<UUID> ids, Pageable pageable) {
+        return userRepository.findAllByIdIn(ids, pageable)
+                .map(userEntity -> new UserResponse(userEntity.getId(), userEntity.getFirstName(), userEntity.getLastName(), userEntity.getEmail()));
     }
 
     @Transactional(readOnly = true)

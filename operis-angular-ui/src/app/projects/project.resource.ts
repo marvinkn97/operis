@@ -9,7 +9,7 @@ import { ProjectUpdateRequest } from './project-update.request';
 export class ProjectResource {  
   constructor(private http: HttpClient) {}
 
-  private readonly baseUrl = 'http://localhost:36543/api/v1/projects';
+  private readonly baseUrl = 'http://localhost:45261/api/v1/projects';
 
   projects = signal<Project[]>([]);
   loading = signal(false);

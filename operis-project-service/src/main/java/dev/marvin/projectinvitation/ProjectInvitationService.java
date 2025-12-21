@@ -24,8 +24,8 @@ public class ProjectInvitationService {
         ProjectEntity project = projectRepository.findByIdAndArchived(projectId, false)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found"));
 
-        if (!project.getOwnerId().equals(authentication.getName())) {
-            throw new IllegalStateException("Only project owner can invite members");
+        if (!project.getOwnerId().equals(UUID.fromString(authentication.getName()))) {
+            throw new BadRequestException("Only project owner can invite members");
         }
 
         projectInvitationRepository.findByProjectEntity_IdAndEmail(project.getId(), email)

@@ -5,4 +5,6 @@ export interface Project {
   progressPercentage: number;
   taskCount: number;
   memberCount: number;
+  memberIds?: string[];
+  ownerId: string; 
 }

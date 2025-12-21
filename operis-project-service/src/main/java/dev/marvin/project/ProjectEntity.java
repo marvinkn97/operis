@@ -71,6 +71,12 @@ public class ProjectEntity {
         }
     }
 
+    public void removeMember(UUID memberId) {
+        if (memberIds.contains(memberId)) {
+            memberIds.remove(memberId);
+        }
+    }
+
     @Transient
     public Integer getProgressPercentage() {
         if (totalTasks == 0 || completedTasks == 0) return 0;
