@@ -1,4 +1,9 @@
-import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
 
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
@@ -14,19 +19,17 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
-    provideOAuthClient(),  // if using standalone API
+    provideOAuthClient(), // if using standalone API
     provideAppInitializer(() => {
       const oauthService = inject(OAuthService);
       oauthService.configure(authConfig);
       oauthService.setupAutomaticSilentRefresh();
-      return oauthService.loadDiscoveryDocumentAndTryLogin().then(() => {
-    // Only remove OAuth login params from the URL, keep the current page
+      oauthService.loadDiscoveryDocumentAndTryLogin();
+      // Only remove OAuth login params from the URL, keep the current page
       if (window.location.search.includes('code=')) {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
-  });
     }),
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
   ],
 };
-

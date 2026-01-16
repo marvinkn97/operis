@@ -63,6 +63,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     }
 
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ProblemDetail> handleBadRequest(BadRequestException ex, WebRequest request
+    ) {
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage()
+        );
+
+        problemDetail.setTitle(HttpStatus.BAD_REQUEST.getReasonPhrase());
+        problemDetail.setProperty("timestamp", LocalDateTime.now(ZoneId.systemDefault()));
+        problemDetail.setProperty("path", request.getDescription(false).replace("uri=", ""));
+
+        return new ResponseEntity<>(problemDetail, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ProblemDetail> handleNotFound(ResourceNotFoundException ex, WebRequest request
     ) {

@@ -8,7 +8,7 @@ import { PagedUserResponse } from './paged-user-response.model';
 
 @Injectable({ providedIn: 'root' })
 export class UsersResource {
-  private readonly baseUrl = 'http://localhost:37871/api/v1/users';
+  private readonly baseUrl = 'http://localhost:39225/api/v1/users';
 
   constructor(private http: HttpClient) {}
 

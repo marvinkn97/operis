@@ -10,6 +10,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @NoArgsConstructor
@@ -21,7 +22,10 @@ import java.util.UUID;
 @Entity
 @Table(
         name = "project_invitations",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"project_id", "email"})
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"project_id", "email"}),
+                @UniqueConstraint(columnNames = {"token"})
+        }
 )
 public class ProjectInvitationEntity {
     @Id
@@ -34,7 +38,20 @@ public class ProjectInvitationEntity {
     private ProjectEntity projectEntity;
 
     @Column(nullable = false)
-    private String email;
+    private String recipientName;
+
+    @Column(nullable = false)
+    private String recipientEmail;
+
+    @Builder.Default
+    @Column(nullable = false, updatable = false)
+    private String token = UUID.randomUUID().toString();
+
+    @Builder.Default
+    private Instant expiresAt = Instant.now().plus(24, ChronoUnit.HOURS);
+
+    private Instant acceptedAt;
+    private Instant rejectedAt;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)

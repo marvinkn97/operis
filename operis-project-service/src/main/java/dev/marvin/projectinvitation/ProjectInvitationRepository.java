@@ -8,5 +8,7 @@ import java.util.UUID;
 
 @Repository
 public interface ProjectInvitationRepository extends JpaRepository<ProjectInvitationEntity, UUID> {
-    Optional<ProjectInvitationEntity> findByProjectEntity_IdAndEmail(UUID projectEntityId, String email);
+    Optional<ProjectInvitationEntity> findByProjectEntity_IdAndRecipientEmail(UUID projectEntityId, String recipientEmail);
+
+    Optional<ProjectInvitationEntity> findByToken(String token);
 }

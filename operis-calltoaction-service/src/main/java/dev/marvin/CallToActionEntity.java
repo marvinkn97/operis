@@ -5,6 +5,8 @@ import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
 
+import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -14,13 +16,11 @@ public class CallToActionEntity {
     @MongoId
     private UUID id;
     private CallToActionType type;
-    private CallToActionStatus status;
+    @Builder.Default
+    private CallToActionStatus status = CallToActionStatus.PENDING;
     private CallToActionTarget target;
-    private String userId;
-    /**
-     * JSON metadata for generic UI behavior
-     */
-    private String metadata;
-
-
+    private String targetId;
+    private String targetEmail;
+    private Map<String, Object> metadata; //JSON metadata for generic UI behavior
+    private Instant createdAt;
 }

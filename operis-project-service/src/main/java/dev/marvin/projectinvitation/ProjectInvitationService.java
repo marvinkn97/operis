@@ -1,15 +1,16 @@
 package dev.marvin.projectinvitation;
 
-import dev.marvin.ResourceNotFoundException;
 import dev.marvin.project.ProjectEntity;
 import dev.marvin.project.ProjectRepository;
 import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -20,59 +21,86 @@ public class ProjectInvitationService {
     private final ProjectInvitationRepository projectInvitationRepository;
 
     @Transactional
-    public void createInvitation(UUID projectId, String email, Authentication authentication) {
-        ProjectEntity project = projectRepository.findByIdAndArchived(projectId, false)
-                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+    public void createInvitation(ProjectInvitationRequest request, Authentication authentication) {
+        ProjectEntity project = projectRepository.findByIdAndArchived(request.projectId(), false)
+                .orElseThrow(() -> new IllegalArgumentException("Project with given id [%s] not found".formatted(request.projectId())));
 
         if (!project.getOwnerId().equals(UUID.fromString(authentication.getName()))) {
             throw new BadRequestException("Only project owner can invite members");
         }
 
-        projectInvitationRepository.findByProjectEntity_IdAndEmail(project.getId(), email)
-                .ifPresent(invitation -> {
-                    throw new BadRequestException("Invitation already exists for this email");
+        projectInvitationRepository.findByProjectEntity_IdAndRecipientEmail(project.getId(), request.recipientEmail())
+                .ifPresentOrElse(_ -> log.info("Invitation already sent for this email {}", request.recipientEmail()), () -> {
+                    ProjectInvitationEntity invitation = ProjectInvitationEntity.builder()
+                            .projectEntity(project)
+                            .recipientName(request.recipientName())
+                            .recipientEmail(request.recipientEmail())
+                            .build();
+
+                    projectInvitationRepository.save(invitation);
+
+                    // publish event - > consumer -> notification, callToAction...
+
+                    /*
+                    Metadata
+                    1. Project - name, description
+                    2. Recipient - name, email
+                    * */
+
                 });
-
-        ProjectInvitationEntity invitation = ProjectInvitationEntity.builder()
-                .projectEntity(project)
-                .email(email)
-                .build();
-
-        projectInvitationRepository.save(invitation);
-
-        // sendNotification(email, project.getName());
-
     }
 
-
     @Transactional
-    public void acceptInvitation(UUID invitationId, String userEmail) {
+    public void acceptInvitation(UUID invitationId, Authentication authentication) {
         ProjectInvitationEntity invitation = projectInvitationRepository.findById(invitationId)
-                .orElseThrow(() -> new IllegalArgumentException("Invitation not found"));
+                .orElseThrow(() -> new BadRequestException("Invitation with given id [%s] not found".formatted(invitationId)));
 
-        if(invitation.getStatus() != ProjectInvitationStatus.PENDING) return; // idempotent
+        if (invitation.getStatus() != ProjectInvitationStatus.PENDING) return; // idempotent
 
-        if (!invitation.getEmail().equalsIgnoreCase(userEmail)) {
-            throw new IllegalStateException("Invitation email mismatch");
+        JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) authentication;
+
+        String email = jwtAuth.getToken().getClaimAsString("email");
+
+        if (!email.equalsIgnoreCase(invitation.getRecipientEmail())) {
+            log.info(
+                    "Invitation acceptance denied. User email [{}] does not match invitation email [{}]",
+                    email,
+                    invitation.getRecipientEmail()
+            );
+            throw new BadRequestException("Invitation does not belong to authenticated user");
         }
 
+
+        invitation.setAcceptedAt(Instant.now());
         invitation.setStatus(ProjectInvitationStatus.ACCEPTED);
         projectInvitationRepository.save(invitation);
     }
 
+
     @Transactional
-    public void rejectInvitation(UUID invitationId, String userEmail) {
+    public void rejectInvitation(UUID invitationId, Authentication authentication) {
         ProjectInvitationEntity invitation = projectInvitationRepository.findById(invitationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+                .orElseThrow(() -> new BadRequestException("Invitation with given id [%s] not found".formatted(invitationId)));
 
-        if(invitation.getStatus() != ProjectInvitationStatus.PENDING) return; // idempotent
+        if (invitation.getStatus() != ProjectInvitationStatus.PENDING) return; // idempotent
 
-        if (!invitation.getEmail().equalsIgnoreCase(userEmail)) {
-            throw new IllegalStateException("Invitation email mismatch");
+        JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) authentication;
+
+        String email = jwtAuth.getToken().getClaimAsString("email");
+
+        if (!email.equalsIgnoreCase(invitation.getRecipientEmail())) {
+            log.info(
+                    "Invitation rejection denied. User email [{}] does not match invitation email [{}]",
+                    email,
+                    invitation.getRecipientEmail()
+            );
+            throw new BadRequestException("Invitation does not belong to authenticated user");
         }
 
+
+        invitation.setRejectedAt(Instant.now());
         invitation.setStatus(ProjectInvitationStatus.REJECTED);
         projectInvitationRepository.save(invitation);
-
     }
+
 }

@@ -10,13 +10,14 @@ public record ProjectResponse(
         UUID id,
         String name,
         String description,
+        String status,
         UUID ownerId,
         Integer progressPercentage,
         Integer taskCount,
         Integer memberCount,
         List<UUID> memberIds) {
 
-    public ProjectResponse(UUID id, String name, String description, Integer progressPercentage, Integer taskCount, Integer memberCount) {
-        this(id, name, description, null, progressPercentage, taskCount, memberCount, null);
+    public ProjectResponse(UUID id, String name, String description, String status, Integer progressPercentage, Integer taskCount, Integer memberCount) {
+        this(id, name, description, status, null, progressPercentage, taskCount, memberCount, null);
     }
 }

@@ -34,7 +34,7 @@ public class ProjectController {
     @PreAuthorize("hasRole('USER')")
     @Operation(summary = "Create a new project")
     public ResponseEntity<Void> createProject(@Valid @RequestBody ProjectRequest projectRequest, @NonNull Authentication authentication) {
-        log.info("New project request: {}", projectRequest);
+        log.info("CREATE_PROJECT_REQUEST request={}", projectRequest);
         projectService.createProject(projectRequest, authentication);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -47,6 +47,7 @@ public class ProjectController {
             @RequestParam(name = "pageSize", required = false, defaultValue = "10") int pageSize,
             @NonNull Authentication authentication
     ) {
+        log.info("GET_PROJECTS_REQUEST page={} size={}", pageNumber, pageSize);
         Page<ProjectResponse> page = projectService.getProjects(
                 PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createdAt")),
                 authentication
@@ -55,11 +56,11 @@ public class ProjectController {
     }
 
 
-
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
     @Operation(summary = "Get a project by its ID")
     public ResponseEntity<ProjectResponse> getProject(@Parameter @PathVariable("id") UUID projectId) {
+        log.info("GET_PROJECT_REQUEST id={}", projectId);
         return ResponseEntity.ok(projectService.getProject(projectId));
     }
 
@@ -68,8 +69,9 @@ public class ProjectController {
     @PreAuthorize("hasRole('USER')")
     @Operation(summary = "Update an existing project")
     public ResponseEntity<Void> updateProject(@Parameter @PathVariable("id") UUID projectId, @Valid @RequestBody ProjectUpdateRequest request, @NonNull Authentication authentication) {
+        log.info("UPDATE_PROJECT_REQUEST id={} request={}", projectId, request);
         projectService.updateProject(request, projectId, authentication);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok().build();
     }
 
 
@@ -77,8 +79,17 @@ public class ProjectController {
     @PreAuthorize("hasRole('USER')")
     @Operation(summary = "Delete a project")
     public ResponseEntity<Void> archiveProject(@Parameter @PathVariable("id") UUID projectId, @NonNull Authentication authentication) {
+        log.info("ARCHIVE_PROJECT_REQUEST id={}", projectId);
         projectService.archiveProject(projectId, authentication);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{id}/close")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Close a project")
+    public ResponseEntity<Void> closeProject(@Parameter @PathVariable("id") UUID projectId, @NonNull Authentication authentication){
+        log.info("CLOSE_PROJECT_REQUEST id={}", projectId);
+        projectService.closeProject(projectId, authentication);
+        return ResponseEntity.ok().build();
+    }
 }

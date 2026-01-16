@@ -15,7 +15,32 @@ spring:
         service-id: operis-configuration-server
 
 management:
+  server:
+    port: 9092
   endpoints:
     web:
       exposure:
-        include: health
+        include:
+          - health
+          - busrefresh
+          - shutdown
+          - prometheus
+          - info
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    readinessstate:
+      enabled: true
+    livenessstate:
+      enabled: true
+
+logging:
+  file:
+    name: logs/${spring.application.name}.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7

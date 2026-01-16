@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: operis-project-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [ "172.17.0.1:9091" ]
+  - job_name: operis-user-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [ "172.17.0.1:9092" ]

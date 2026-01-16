@@ -9,7 +9,9 @@ volumes:
   postgres-user-data:
   pgadmin-data:
   maildev-data:
-
+  rabbitmq-data:
+  vault-data:
+  tempo-data:
 
 services:
   postgres-operis-keycloak:
@@ -38,7 +40,7 @@ services:
       KC_DB_PASSWORD: password
     command: start-dev
     ports:
-      - "9090:8080"
+      - "9000:8080"
     depends_on:
       - postgres-operis-keycloak
     volumes:
@@ -104,3 +106,289 @@ services:
       - maildev-data:/home/node/maildev
     networks:
       - operis-network
+
+  rabbitmq:
+    container_name: operis-rabbitmq
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: operis
+      RABBITMQ_DEFAULT_PASS: password
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - operis-network
+
+  vault:
+    container_name: operis-vault
+    image: hashicorp/vault:1.15
+    restart: unless-stopped
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: root
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    volumes:
+      - vault-data:/vault/file
+    networks:
+      - operis-network
+    command: vault server -dev
+
+  read:
+    image: grafana/loki:latest
+    command: "-config.file=/etc/loki/config.yaml -target=read"
+    ports:
+      - 3101:3100
+      - 7946
+      - 9095
+    volumes:
+      - ./loki-config.yaml:/etc/loki/config.yaml
+    depends_on:
+      - minio
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: &loki-dns
+      operis-network:
+        aliases:
+          - loki
+
+  write:
+    image: grafana/loki:latest
+    command: "-config.file=/etc/loki/config.yaml -target=write"
+    ports:
+      - 3102:3100
+      - 7946
+      - 9095
+    volumes:
+      - ./loki-config.yaml:/etc/loki/config.yaml
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - minio
+    networks:
+      <<: *loki-dns
+
+  alloy:
+    image: grafana/alloy:latest
+    volumes:
+      - ./alloy-local-config.yaml:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+    ports:
+      - 12345:12345
+    depends_on:
+      - gateway
+    networks:
+      - operis-network
+
+  minio:
+    image: minio/minio
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /data/loki-data && \
+        mkdir -p /data/loki-ruler && \
+        minio server /data
+    environment:
+      - MINIO_ROOT_USER=loki
+      - MINIO_ROOT_PASSWORD=supersecret
+      - MINIO_PROMETHEUS_AUTH_TYPE=public
+      - MINIO_UPDATE=off
+    ports:
+      - 9000
+    volumes:
+      - ./.data/minio:/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 15s
+      timeout: 20s
+      retries: 5
+    networks:
+      - operis-network
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    depends_on:
+      - gateway
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+        apiVersion: 1
+        datasources:
+          - name: Loki
+            type: loki
+            access: proxy
+            url: http://gateway:3100
+            jsonData:
+              httpHeaderName1: "X-Scope-OrgID"
+            secureJsonData:
+              httpHeaderValue1: "tenant1"
+          - name: Prometheus
+            type: prometheus
+            access: proxy
+            url: http://prometheus:9090
+            isDefault: true
+          - name: Tempo
+            type: tempo
+            access: proxy
+            url: http://tempo:3200
+        EOF
+        /run.sh
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - operis-network
+
+  backend:
+    image: grafana/loki:latest
+    volumes:
+      - ./loki-config.yaml:/etc/loki/config.yaml
+    ports:
+      - "3100"
+      - "7946"
+    command: "-config.file=/etc/loki/config.yaml -target=backend -legacy-read-mode=false"
+    depends_on:
+      - gateway
+    networks:
+      - operis-network
+
+  gateway:
+    image: nginx:latest
+    depends_on:
+      - read
+      - write
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        cat <<EOF > /etc/nginx/nginx.conf
+        user  nginx;
+        worker_processes  5;  ## Default: 1
+        
+        events {
+          worker_connections   1000;
+        }
+        
+        http {
+          resolver 127.0.0.11;
+        
+          server {
+            listen             3100;
+        
+            location = / {
+              return 200 'OK';
+              auth_basic off;
+            }
+        
+            location = /api/prom/push {
+              proxy_pass       http://write:3100\$$request_uri;
+            }
+        
+            location = /api/prom/tail {
+              proxy_pass       http://read:3100\$$request_uri;
+              proxy_set_header Upgrade \$$http_upgrade;
+              proxy_set_header Connection "upgrade";
+            }
+        
+            location ~ /api/prom/.* {
+              proxy_pass       http://read:3100\$$request_uri;
+            }
+        
+            location = /loki/api/v1/push {
+              proxy_pass       http://write:3100\$$request_uri;
+            }
+        
+            location = /loki/api/v1/tail {
+              proxy_pass       http://read:3100\$$request_uri;
+              proxy_set_header Upgrade \$$http_upgrade;
+              proxy_set_header Connection "upgrade";
+            }
+        
+            location ~ /loki/api/.* {
+              proxy_pass       http://read:3100\$$request_uri;
+            }
+          }
+        }
+        EOF
+        /docker-entrypoint.sh nginx -g "daemon off;"
+    ports:
+      - "3100:3100"
+    healthcheck:
+      test: [ "CMD", "service", "nginx", "status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - operis-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: operis-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+    networks:
+      - operis-network
+    restart: unless-stopped
+
+  tempo-init:
+    image: alpine:latest
+    container_name: tempo-init
+    command: >
+      sh -c "
+        mkdir -p /tempo-data/wal /tempo-data/blocks &&
+        chown -R 10001:10001 /tempo-data
+      "
+    volumes:
+      - tempo-data:/tempo-data
+    networks:
+      - operis-network
+    restart: "no"
+
+
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    ports:
+      - "3200:3200"   # Grafana queries Tempo
+      - "4317:4317"   # gRPC for OTEL exporters
+      - "4318:4318"   #HTTP
+    volumes:
+      - tempo-data:/tempo-data
+      - ./tempo.yml:/etc/tempo/tempo.yml:ro
+    command: [ "-config.file=/etc/tempo/tempo.yml" ]
+    networks:
+      - operis-network
+    depends_on:
+      - tempo-init
+
+
+

@@ -1,7 +1,7 @@
 package dev.marvin.project;
 
+import dev.marvin.BadRequestException;
 import dev.marvin.ResourceNotFoundException;
-import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -10,7 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +20,6 @@ import java.util.UUID;
 @Slf4j
 public class ProjectService {
     private final ProjectRepository projectRepository;
-    private final RestClient restClient;
 
     private static final String PROJECT_NOT_FOUND = "Project with given id [%s] not found";
 
@@ -36,7 +34,7 @@ public class ProjectService {
                 .memberIds(new ArrayList<>(List.of(ownerId)))
                 .build();
         projectRepository.save(projectEntity);
-        log.info("Project {} created", projectEntity.getName());
+        log.info("Project {} created", projectEntity.getId());
     }
 
     @Transactional
@@ -48,7 +46,7 @@ public class ProjectService {
         UUID ownerId = UUID.fromString(authentication.getName());
 
         if (!projectEntity.getOwnerId().equals(ownerId)) {
-            throw new BadRequestException("Only the project owner can modify this project");
+            throw new BadRequestException("Only the project owner can update this project");
         }
 
         boolean changes = false;
@@ -69,7 +67,7 @@ public class ProjectService {
         }
 
         projectRepository.save(projectEntity);
-        log.info("Project {} updated", projectEntity.getName());
+        log.info("Project {} updated", projectEntity.getId());
     }
 
     @Transactional(readOnly = true)
@@ -80,7 +78,7 @@ public class ProjectService {
         List<ProjectResponse> projectEntities = projectRepository.findAllWithMembers(ownerId, false).stream()
                 .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt())) // latest first
                 .map(projectEntity ->
-                        new ProjectResponse(projectEntity.getId(), projectEntity.getName(), projectEntity.getDescription(), projectEntity.getProgressPercentage(), projectEntity.getTotalTasks(), projectEntity.getMemberIds().size()))
+                        new ProjectResponse(projectEntity.getId(), projectEntity.getName(), projectEntity.getDescription(), projectEntity.getStatus().getValue(), projectEntity.getProgressPercentage(), projectEntity.getTotalTasks(), projectEntity.getMemberIds().size()))
                 .toList();
 
         int start = (int) pageable.getOffset();
@@ -95,7 +93,7 @@ public class ProjectService {
     public ProjectResponse getProject(UUID projectId) {
         log.info("Retrieving project with id {}", projectId);
         return projectRepository.findByIdWithMembers(projectId)
-                .map(projectEntity -> new ProjectResponse(projectEntity.getId(), projectEntity.getName(), projectEntity.getDescription(), projectEntity.getOwnerId(), projectEntity.getProgressPercentage(), projectEntity.getTotalTasks(), projectEntity.getMemberIds().size(), projectEntity.getMemberIds()))
+                .map(projectEntity -> new ProjectResponse(projectEntity.getId(), projectEntity.getName(), projectEntity.getDescription(), projectEntity.getStatus().getValue(), projectEntity.getOwnerId(), projectEntity.getProgressPercentage(), projectEntity.getTotalTasks(), projectEntity.getMemberIds().size(), projectEntity.getMemberIds()))
                 .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND.formatted(projectId)));
     }
 
@@ -108,7 +106,7 @@ public class ProjectService {
         UUID ownerId = UUID.fromString(authentication.getName());
 
         if (!projectEntity.getOwnerId().equals(ownerId)) {
-            throw new BadRequestException("Only the project owner can modify this project");
+            throw new BadRequestException("Only the project owner can archive this project");
         }
 
         if (projectEntity.getTotalTasks() > projectEntity.getCompletedTasks()) {
@@ -117,8 +115,42 @@ public class ProjectService {
 
         projectEntity.setArchived(true);
         projectRepository.save(projectEntity);
-        log.info("Project {} archived", projectEntity.getName());
+        log.info("Project {} archived", projectEntity.getId());
     }
 
+    @Transactional
+    public void closeProject(UUID projectId, Authentication authentication){
+        log.info("Closing project {}", projectId);
+        ProjectEntity projectEntity = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND.formatted(projectId)));
+
+        if(projectEntity.getStatus().equals(ProjectStatus.COMPLETED)){
+            log.info("Project already marked as completed");
+            return;
+        }
+
+        UUID ownerId = UUID.fromString(authentication.getName());
+
+        if (!projectEntity.getOwnerId().equals(ownerId)) {
+            throw new BadRequestException("Only the project owner can close this project");
+        }
+
+        int total = projectEntity.getTotalTasks();
+        int completed = projectEntity.getCompletedTasks();
+
+        log.info("Close check → totalTasks={}, completedTasks={}", total, completed);
+
+        if (total == 0) {
+            throw new BadRequestException("Project cannot be closed: no tasks defined");
+        }
+
+        if (completed != total) {
+            throw new BadRequestException("Project cannot be closed: there are unfinished tasks");
+        }
+
+        projectEntity.setStatus(ProjectStatus.COMPLETED);
+        projectRepository.save(projectEntity);
+        log.info("Project {} closed", projectEntity.getId());
+    }
 
 }

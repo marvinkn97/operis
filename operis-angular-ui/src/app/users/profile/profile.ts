@@ -2,7 +2,6 @@ import { Component, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { User } from '../user.model';
 import { UsersResource } from '../users.resource';
-import { OAuthService } from 'angular-oauth2-oidc';
 import { AuthService } from '../../auth/auth.service';
 
 @Component({
@@ -14,15 +13,44 @@ import { AuthService } from '../../auth/auth.service';
       <h1 class="text-3xl font-bold mb-6">Profile</h1>
 
       <!-- Success/Error messages -->
-      @if(updateSuccessMessage()) {
+      @if (updateSuccessMessage()) {
       <div class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded shadow">
         {{ updateSuccessMessage() }}
       </div>
-      } @if(updateErrorMessage()) {
+      } @if (updateErrorMessage()) {
       <div class="fixed bottom-6 right-6 bg-red-600 text-white px-4 py-2 rounded shadow">
         {{ updateErrorMessage() }}
       </div>
       }
+
+      <!-- Loading Skeleton -->
+      @if (loading()) {
+      <div class="space-y-6">
+        <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+
+        <div class="bg-white shadow rounded-xl p-6 space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+            <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div class="flex justify-end">
+            <div class="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        <div class="bg-white shadow rounded-xl p-6">
+          <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+
+        <div class="bg-white shadow rounded-xl p-6 space-y-4">
+          <div class="h-6 w-40 bg-gray-200 rounded animate-pulse"></div>
+          <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+      </div>
+      }
+
+      <!-- Actual Profile UI -->
+      @if (!loading()) {
 
       <!-- Name Section -->
       <form class="bg-white shadow rounded-xl p-6 space-y-6">
@@ -51,7 +79,7 @@ import { AuthService } from '../../auth/auth.service';
         </div>
 
         <div class="flex justify-end gap-2">
-          @if(!editingName()) {
+          @if (!editingName()) {
           <button
             type="button"
             class="px-6 py-2 border border-yellow-400 text-yellow-600 rounded-md hover:bg-yellow-50"
@@ -78,7 +106,7 @@ import { AuthService } from '../../auth/auth.service';
         </div>
       </form>
 
-      <!-- Email Section (readonly) -->
+      <!-- Email Section -->
       <div class="bg-white shadow rounded-xl p-6 mt-6">
         <label class="block text-gray-700 font-medium mb-2">Email</label>
         <input
@@ -94,7 +122,7 @@ import { AuthService } from '../../auth/auth.service';
         <h2 class="text-md font-medium mb-4 text-gray-700">Change Password</h2>
 
         <div class="space-y-4">
-          @if(!editingPassword()) {
+          @if (!editingPassword()) {
           <input
             type="password"
             value="********"
@@ -120,7 +148,7 @@ import { AuthService } from '../../auth/auth.service';
         </div>
 
         <div class="flex justify-end gap-2">
-          @if(!editingPassword()) {
+          @if (!editingPassword()) {
           <button
             type="button"
             class="px-6 py-2 border border-yellow-400 text-yellow-600 rounded-md hover:bg-yellow-50"
@@ -146,10 +174,13 @@ import { AuthService } from '../../auth/auth.service';
           }
         </div>
       </form>
+      }
     </div>
   `,
 })
 export class Profile implements OnInit {
+  loading = signal(true);
+
   profile = signal<User>({
     id: '',
     firstName: '',
@@ -172,20 +203,22 @@ export class Profile implements OnInit {
     this.loadProfile();
   }
 
-  // --- Load authenticated user ---
   loadProfile() {
+    this.loading.set(true);
+
     this.usersResource.getAuthenticatedUser().subscribe({
       next: (user) => {
         this.profile.set(user);
+        this.loading.set(false);
       },
       error: () => {
+        this.loading.set(false);
         this.updateErrorMessage.set('Failed to load profile');
         setTimeout(() => this.updateErrorMessage.set(null), 3000);
       },
     });
   }
 
-  // --- Name methods ---
   updateName() {
     const { firstName, lastName } = this.profile();
 
@@ -198,9 +231,7 @@ export class Profile implements OnInit {
 
     this.usersResource.updateMyName({ firstName, lastName }).subscribe({
       next: () => {
-        // 🔑 re-fetch from backend
         this.loadProfile();
-
         this.updateSuccessMessage.set('Name updated successfully!');
         setTimeout(() => this.updateSuccessMessage.set(null), 3000);
       },
@@ -213,10 +244,9 @@ export class Profile implements OnInit {
 
   cancelName() {
     this.editingName.set(false);
-    this.loadProfile(); // reload latest from backend if user cancels edits
+    this.loadProfile();
   }
 
-  // --- Password methods ---
   updatePassword() {
     if (!this.newPassword || !this.confirmPassword) {
       this.updateErrorMessage.set('Please fill all password fields');
@@ -230,25 +260,20 @@ export class Profile implements OnInit {
       return;
     }
 
-    this.usersResource
-      .updateMyPassword({
-        newPassword: this.newPassword,
-      })
-      .subscribe({
-        next: () => {
-          this.editingPassword.set(false);
-          this.newPassword = '';
-          this.confirmPassword = '';
-
-          this.updateSuccessMessage.set('Password updated successfully!');
-          setTimeout(() => this.updateSuccessMessage.set(null), 3000);
-          this.authService.logout();
-        },
-        error: () => {
-          this.updateErrorMessage.set('Failed to update password');
-          setTimeout(() => this.updateErrorMessage.set(null), 3000);
-        },
-      });
+    this.usersResource.updateMyPassword({ newPassword: this.newPassword }).subscribe({
+      next: () => {
+        this.editingPassword.set(false);
+        this.newPassword = '';
+        this.confirmPassword = '';
+        this.updateSuccessMessage.set('Password updated successfully!');
+        setTimeout(() => this.updateSuccessMessage.set(null), 3000);
+        this.authService.logout();
+      },
+      error: () => {
+        this.updateErrorMessage.set('Failed to update password');
+        setTimeout(() => this.updateErrorMessage.set(null), 3000);
+      },
+    });
   }
 
   cancelPassword() {

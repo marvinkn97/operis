@@ -15,10 +15,55 @@ spring:
         service-id: operis-configuration-server
 
 management:
+  server:
+    port: 9091
   endpoints:
     web:
       exposure:
-        include: health
+        include:
+          - health
+          - busrefresh
+          - shutdown
+          - prometheus
+          - metrics
+  prometheus:
+    metrics:
+      export:
+        enabled: true
   endpoint:
     health:
-      show-details: when_authorized
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  tracing:
+    export:
+      otlp:
+        enabled: true
+    sampling:
+      probability: 1.0
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:4317
+          transport: grpc
+  otlp:
+    metrics:
+      export:
+        enabled: off
+
+
+logging:
+  file:
+    name: logs/${spring.application.name}.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+
+

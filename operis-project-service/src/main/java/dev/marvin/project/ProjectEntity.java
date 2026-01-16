@@ -32,6 +32,10 @@ public class ProjectEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    private ProjectStatus status = ProjectStatus.OPEN;
+
     @Column(name = "owner_id", nullable = false)
     private UUID ownerId;
 
@@ -72,9 +76,7 @@ public class ProjectEntity {
     }
 
     public void removeMember(UUID memberId) {
-        if (memberIds.contains(memberId)) {
-            memberIds.remove(memberId);
-        }
+        memberIds.removeIf(_ -> memberIds.contains(memberId));
     }
 
     @Transient
@@ -82,5 +84,4 @@ public class ProjectEntity {
         if (totalTasks == 0 || completedTasks == 0) return 0;
         return (int) Math.round(((double) completedTasks / totalTasks) * 100);
     }
-
 }

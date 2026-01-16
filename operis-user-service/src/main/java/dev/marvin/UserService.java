@@ -1,6 +1,5 @@
 package dev.marvin;
 
-import dev.marvin.user.UserResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -34,12 +33,13 @@ public class UserService {
                 .map(userEntity -> new UserResponse(userEntity.getId(), userEntity.getFirstName(), userEntity.getLastName(), userEntity.getEmail()));
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updateAuthenticatedUserName(Authentication authentication, NameUpdateRequest request) {
         String userId = authentication.getName();
         UserRepresentation userRepresentation = keycloakAdminClientService.updateUserName(userId, request.firstName(), request.lastName());
 
-        userRepository.findById(UUID.fromString(userId)).ifPresentOrElse((userEntity) -> {
+        userRepository.findById(UUID.fromString(userId)).ifPresentOrElse(userEntity -> {
+            log.info("Updating local DB user details");
             boolean changes = false;
             if (!userRepresentation.getFirstName().equals(userEntity.getFirstName())) {
                 userEntity.setFirstName(userRepresentation.getFirstName());
@@ -53,6 +53,7 @@ public class UserService {
 
             if (!changes) {
                 log.info("No data changes found");
+                return;
             }
 
             userRepository.save(userEntity);
@@ -62,13 +63,11 @@ public class UserService {
 
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public void updateAuthenticatedUserPassword(Authentication authentication, PasswordUpdateRequest request) {
         String userId = authentication.getName();
         keycloakAdminClientService.resetPassword(userId, request.newPassword());
         log.info("Password updated for user {}", userId);
-
-
     }
 
 }

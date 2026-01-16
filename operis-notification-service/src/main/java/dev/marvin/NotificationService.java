@@ -33,6 +33,5 @@ public class NotificationService {
         String htmlBody = templateEngine.process(templateName, context);
 
         emailService.sendEmail(emailNotificationRequest.recipientEmail(), "Project Invitation", htmlBody);
-
     }
 }

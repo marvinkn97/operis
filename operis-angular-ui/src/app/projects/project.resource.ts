@@ -4,12 +4,13 @@ import { Project } from './project.model';
 import { PagedProjectResponse } from './paged-project-response.model';
 import { ProjectRequest } from './project.request';
 import { ProjectUpdateRequest } from './project-update.request';
+import { ProjectInvitationRequest } from './project-invitation.request';
 
 @Injectable({ providedIn: 'root' })
-export class ProjectResource {  
+export class ProjectResource {
   constructor(private http: HttpClient) {}
 
-  private readonly baseUrl = 'http://localhost:45261/api/v1/projects';
+  private readonly baseUrl = 'http://localhost:37885/api/v1/projects';
 
   projects = signal<Project[]>([]);
   loading = signal(false);
@@ -31,23 +32,21 @@ export class ProjectResource {
       .set('pageNumber', page.toString())
       .set('pageSize', size.toString());
 
-    this.http
-      .get<PagedProjectResponse>(this.baseUrl, { params })
-      .subscribe({
-        next: (data) => {
-          const items = data?._embedded?.projectResponseList ?? [];
+    this.http.get<PagedProjectResponse>(this.baseUrl, { params }).subscribe({
+      next: (data) => {
+        const items = data?._embedded?.projectResponseList ?? [];
 
-          if (items.length < size) this.hasMore.set(false); // no more pages
-          this.projects.set([...this.projects(), ...items]); // append new data
-          this.currentPage = page + 1; // increment for next fetch
-          this.loading.set(false);
-        },
-        error: (err) => {
-          console.log('Error loading projects', err);
-          this.error.set(err.message || 'Error loading projects');
-          this.loading.set(false);
-        },
-      });
+        if (items.length < size) this.hasMore.set(false); // no more pages
+        this.projects.set([...this.projects(), ...items]); // append new data
+        this.currentPage = page + 1; // increment for next fetch
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.log('Error loading projects', err);
+        this.error.set(err.message || 'Error loading projects');
+        this.loading.set(false);
+      },
+    });
   }
 
   reset() {
@@ -69,6 +68,17 @@ export class ProjectResource {
   }
 
   getProjectById(id: string) {
-  return this.http.get<Project>(`${this.baseUrl}/${id}`);
-}
+    return this.http.get<Project>(`${this.baseUrl}/${id}`);
+  }
+
+  markProjectCompleted(id: string) {
+    return this.http.patch<void>(`${this.baseUrl}/${id}/close`, {});
+  }
+
+  /**
+   * Invite a user to a project
+   */
+  inviteUserToProject(projectId: string, request: ProjectInvitationRequest) {
+    return this.http.post<void>(`${this.baseUrl}/${projectId}/invitations`, request);
+  }
 }
