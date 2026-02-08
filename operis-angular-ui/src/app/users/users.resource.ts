@@ -5,10 +5,11 @@ import { User } from './user.model';
 import { NameUpdateRequest } from './name-update.request';
 import { PasswordUpdateRequest } from './password-update.request';
 import { PagedUserResponse } from './paged-user-response.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class UsersResource {
-  private readonly baseUrl = 'http://localhost:39225/api/v1/users';
+   private readonly baseUrl =  environment.apiUrl + '/api/v1/users';
 
   constructor(private http: HttpClient) {}
 

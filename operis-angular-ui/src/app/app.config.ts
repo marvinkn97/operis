@@ -20,15 +20,17 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
     provideOAuthClient(), // if using standalone API
-    provideAppInitializer(() => {
+    provideAppInitializer(async () => {
       const oauthService = inject(OAuthService);
       oauthService.configure(authConfig);
       oauthService.setupAutomaticSilentRefresh();
-      oauthService.loadDiscoveryDocumentAndTryLogin();
-      // Only remove OAuth login params from the URL, keep the current page
-      if (window.location.search.includes('code=')) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
+
+      return oauthService.loadDiscoveryDocumentAndTryLogin().then(() => {
+        // Remove auth code from URL
+        if (window.location.search.includes('code=')) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      });
     }),
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
   ],

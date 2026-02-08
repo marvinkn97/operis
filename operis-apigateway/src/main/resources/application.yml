@@ -4,13 +4,149 @@ server:
 spring:
   application:
     name: operis-api-gateway
-
   config:
     import: optional:configserver:/
-
   cloud:
     config:
       discovery:
         service-id: operis-configuration-server
         enabled: true
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: operis-project-service
+              uri: lb://operis-project-service
+              predicates:
+                - Path=/api/v1/projects/**, /api/v1/project-invitations/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: projectServiceCB
+                    fallbackUri: forward:/fallback/projects
+            - id: operis-user-service
+              uri: lb://operis-user-service
+              predicates:
+                - name: Path
+                  args:
+                    pattern: /api/v1/users/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: userServiceCB
+                    fallbackUri: forward:/fallback/users
+          default-filters:
+            - name: Retry
+              args:
+                retries: 3
+                methods: GET
+                backoff:
+                  firstBackoff: "200ms"
+                  maxBackoff: "2s"
+                  factor: 2
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9000/realms/operis
+          jwk-set-uri: http://localhost:9000/realms/operis/protocol/openid-connect/certs
+  data:
+    redis:
+      host: localhost
+      port: 6378
+      password: password
+
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${random.value}
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - busrefresh
+          - prometheus
+          - metrics
+          - circuitbreakers
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+    circuitbreakers:
+      enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+    circuitbreakers:
+      enabled: true
+  tracing:
+    export:
+      otlp:
+        enabled: true
+      enabled: true
+    sampling:
+      probability: 1.0
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/traces
+          transport: http
+  otlp:
+    metrics:
+      export:
+        enabled: false
+
+logging:
+  file:
+    name: logs/${spring.application.name}.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        permitted-number-of-calls-in-half-open-state: 2
+        failure-rate-threshold: 50
+        wait-duration-in-open-state:
+          seconds: 10
+        minimum-number-of-calls: 5
+        sliding-window-type: count_based
+        automatic-transition-from-open-to-half-open-enabled: true
+    instances:
+      projectServiceCB:
+        base-config: default
+      userServiceCB:
+        base-config: default
+
+
+
+
+
+
+
 

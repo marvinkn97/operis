@@ -12,6 +12,7 @@ volumes:
   rabbitmq-data:
   vault-data:
   tempo-data:
+  redis-data:
 
 services:
   postgres-operis-keycloak:
@@ -389,6 +390,22 @@ services:
       - operis-network
     depends_on:
       - tempo-init
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6378:6379"
+    command: >
+      redis-server
+      --requirepass password
+      --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - operis-network
+
 
 
 

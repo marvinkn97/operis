@@ -4,7 +4,8 @@ import lombok.Getter;
 
 @Getter
 public enum TaskStatus {
-    TODO("To Do");
+    TODO("To Do"),
+    COMPLETED("Completed");
 
     private final String value;
 

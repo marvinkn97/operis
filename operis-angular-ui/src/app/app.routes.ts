@@ -6,9 +6,13 @@ import { ProjectPage } from './projects/project-page/project-page';
 import { ErrorPage } from './error-page/error-page';
 import { Profile } from './users/profile/profile';
 import { ActionCenter } from './actions/action-center/action-center';
+import { AuthCallbackComponent } from './auth/auth-callback';
 
 export const routes: Routes = [
-  { path: '', component: GetStarted }, // unprotected landing page
+  { path: '', component: GetStarted }, // unprotected landing page,
+
+    { path: 'auth/callback', component: AuthCallbackComponent },
+
   { path: 'projects', component: ProjectsPage, canActivate: [AuthGuard] },
   { path: 'projects/:id', component: ProjectPage, canActivate: [AuthGuard] },
   {

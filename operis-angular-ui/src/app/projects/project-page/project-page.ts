@@ -6,7 +6,6 @@ import { ProjectResource } from '../project.resource';
 import { Project } from '../project.model';
 import { UsersResource } from '../../users/users.resource';
 import { User } from '../../users/user.model';
-import { ErrorModel } from '../../error.model';
 
 type Task = {
   id: string;
@@ -52,16 +51,17 @@ type Task = {
         <!-- Project actions -->
         <div class="mt-4 flex gap-3">
           @if (project()?.status !== 'COMPLETED') {
-          <button
-            (click)="markProjectCompleted()"
-            class="px-4 py-2 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700"
-          >
-            ✓ Mark as Completed
-          </button>
-          } @if (project()?.status === 'COMPLETED') {
-          <span class="text-sm px-3 py-1 rounded-full bg-green-100 text-green-800">
-            Completed
-          </span>
+            <button
+              (click)="markProjectCompleted()"
+              class="px-4 py-2 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700"
+            >
+              ✓ Mark as Completed
+            </button>
+          }
+          @if (project()?.status === 'COMPLETED') {
+            <span class="text-sm px-3 py-1 rounded-full bg-green-100 text-green-800">
+              Completed
+            </span>
           }
         </div>
       </section>
@@ -107,53 +107,54 @@ type Task = {
 
           <!-- Loading -->
           @if (loadingMembers()) {
-          <p class="text-xs text-gray-500 mt-1">Loading members...</p>
+            <p class="text-xs text-gray-500 mt-1">Loading members...</p>
           }
 
           <!-- Member list -->
           @if (membersExpanded()) {
-          <ul class="space-y-1 mt-2">
-            @for(member of members(); track member.id) {
-            <li class="flex justify-between items-center bg-white border rounded p-2 text-sm">
-              <div class="flex items-center gap-2">
-                <div
-                  class="w-6 h-6 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-medium"
-                >
-                  {{ member.firstName.charAt(0) }}{{ member.lastName.charAt(0) }}
-                </div>
-                <div class="text-gray-700">
-                  <p class="font-medium">{{ member.firstName }} {{ member.lastName }}</p>
-                  <p class="text-xs text-gray-500">{{ member.email }}</p>
-                </div>
+            <ul class="space-y-1 mt-2">
+              @for (member of members(); track member.id) {
+                <li class="flex justify-between items-center bg-white border rounded p-2 text-sm">
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="w-6 h-6 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-medium"
+                    >
+                      {{ member.firstName.charAt(0) }}{{ member.lastName.charAt(0) }}
+                    </div>
+                    <div class="text-gray-700">
+                      <p class="font-medium">{{ member.firstName }} {{ member.lastName }}</p>
+                      <p class="text-xs text-gray-500">{{ member.email }}</p>
+                    </div>
 
-                @if(member.id === ownerId()) {
-                <span class="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded ml-2"
-                  >Owner</span
-                >
-                }
-              </div>
+                    @if (member.id === ownerId()) {
+                      <span class="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded ml-2"
+                        >Owner</span
+                      >
+                    }
+                  </div>
 
-              @if(member.id !== ownerId()) {
-              <button
-                class="text-red-600 text-xs hover:underline"
-                (click)="removeMember(member.id)"
-              >
-                Remove
-              </button>
+                  @if (member.id !== ownerId()) {
+                    <button
+                      class="text-red-600 text-xs hover:underline"
+                      (click)="removeMember(member.id)"
+                    >
+                      Remove
+                    </button>
+                  }
+                </li>
               }
-            </li>
-            }
-          </ul>
+            </ul>
 
-          <!-- Load more -->
-          @if (membersHasMore() && !loadingMembers()) {
-          <button
-            (click)="fetchMembers(membersPage())"
-            class="text-sm text-blue-600 hover:underline mt-2"
-          >
-            Load more
-          </button>
-          } }
+            <!-- Load more -->
+            @if (membersHasMore() && !loadingMembers()) {
+              <button
+                (click)="fetchMembers(membersPage())"
+                class="text-sm text-blue-600 hover:underline mt-2"
+              >
+                Load more
+              </button>
+            }
+          }
         </section>
 
         <!-- Tasks -->
@@ -169,32 +170,34 @@ type Task = {
           </div>
 
           @if (tasks().length === 0) {
-          <p class="text-sm text-gray-500">No tasks created yet.</p>
+            <p class="text-sm text-gray-500">No tasks created yet.</p>
           }
 
           <div class="space-y-4">
-            @for(task of tasks(); track task.id) {
-            <div class="border rounded-xl p-4 hover:shadow-sm transition">
-              <div class="flex justify-between items-start gap-4">
-                <div>
-                  <h3 class="font-semibold">{{ task.title }}</h3>
-                  <p class="text-sm text-gray-600 mt-1">{{ task.description }}</p>
+            @for (task of tasks(); track task.id) {
+              <div class="border rounded-xl p-4 hover:shadow-sm transition">
+                <div class="flex justify-between items-start gap-4">
+                  <div>
+                    <h3 class="font-semibold">{{ task.title }}</h3>
+                    <p class="text-sm text-gray-600 mt-1">{{ task.description }}</p>
+                  </div>
+
+                  <span
+                    class="text-xs px-3 py-1 rounded-full font-medium"
+                    [ngClass]="statusClass(task.status)"
+                  >
+                    {{ task.status }}
+                  </span>
                 </div>
 
-                <span
-                  class="text-xs px-3 py-1 rounded-full font-medium"
-                  [ngClass]="statusClass(task.status)"
-                >
-                  {{ task.status }}
-                </span>
+                <div class="flex gap-2 mt-3 flex-wrap">
+                  @for (user of task.assignees; track user.id) {
+                    <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">{{
+                      user.firstName
+                    }}</span>
+                  }
+                </div>
               </div>
-
-              <div class="flex gap-2 mt-3 flex-wrap">
-                @for(user of task.assignees; track user.id) {
-                <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">{{ user.firstName }}</span>
-                }
-              </div>
-            </div>
             }
           </div>
         </section>
@@ -202,92 +205,93 @@ type Task = {
 
       <!-- Invite Member Modal -->
       @if (showInviteMember()) {
-      <div class="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-        <div class="bg-white p-6 rounded-xl shadow-xl w-96">
-          <h2 class="text-xl font-semibold mb-4">Invite Member</h2>
-          <div class="flex flex-col gap-4">
-            <input
-              [(ngModel)]="inviteForm.name"
-              placeholder="Full name"
-              class="border rounded-lg p-2"
-            />
-            <input
-              [(ngModel)]="inviteForm.email"
-              placeholder="Email address"
-              type="email"
-              class="border rounded-lg p-2"
-            />
-          </div>
-          <div class="flex justify-end gap-3 mt-6">
-            <button
-              (click)="closeInviteModal()"
-              class="px-4 py-2 rounded-lg border hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-            <button
-              (click)="inviteMember()"
-              class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-            >
-              Send Invite
-            </button>
+        <div class="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div class="bg-white p-6 rounded-xl shadow-xl w-96">
+            <h2 class="text-xl font-semibold mb-4">Invite Member</h2>
+            <div class="flex flex-col gap-4">
+              <input
+                [(ngModel)]="inviteForm.name"
+                placeholder="Full name"
+                class="border rounded-lg p-2"
+              />
+              <input
+                [(ngModel)]="inviteForm.email"
+                placeholder="Email address"
+                type="email"
+                class="border rounded-lg p-2"
+              />
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+              <button
+                (click)="closeInviteModal()"
+                class="px-4 py-2 rounded-lg border hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                (click)="inviteMember()"
+                class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              >
+                Send Invite
+              </button>
+            </div>
           </div>
         </div>
-      </div>
       }
 
       <!-- Add Task Modal -->
       @if (showAddTask()) {
-      <div class="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-        <div class="bg-white p-6 rounded-xl shadow-xl w-md">
-          <h2 class="text-xl font-semibold mb-4">Create Task</h2>
-          <div class="flex flex-col gap-4">
-            <input
-              [(ngModel)]="newTask.title"
-              placeholder="Task title"
-              class="border rounded-lg p-2"
-            />
-            <textarea
-              [(ngModel)]="newTask.description"
-              placeholder="Task description"
-              rows="3"
-              class="border rounded-lg p-2"
-            ></textarea>
+        <div class="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div class="bg-white p-6 rounded-xl shadow-xl w-md">
+            <h2 class="text-xl font-semibold mb-4">Create Task</h2>
+            <div class="flex flex-col gap-4">
+              <input
+                [(ngModel)]="newTask.title"
+                placeholder="Task title"
+                class="border rounded-lg p-2"
+              />
+              <textarea
+                [(ngModel)]="newTask.description"
+                placeholder="Task description"
+                rows="3"
+                class="border rounded-lg p-2"
+              ></textarea>
 
-            <div>
-              <p class="text-sm font-medium mb-2">Assign Members</p>
-              <div class="flex flex-wrap gap-3">
-                @for(member of members(); track member.id) {
-                <label class="flex items-center gap-2 text-sm">
-                  <input type="checkbox" (change)="toggleAssignee(member)" /> {{ member.firstName }}
-                </label>
-                }
+              <div>
+                <p class="text-sm font-medium mb-2">Assign Members</p>
+                <div class="flex flex-wrap gap-3">
+                  @for (member of members(); track member.id) {
+                    <label class="flex items-center gap-2 text-sm">
+                      <input type="checkbox" (change)="toggleAssignee(member)" />
+                      {{ member.firstName }}
+                    </label>
+                  }
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="flex justify-end gap-3 mt-6">
-            <button
-              (click)="closeTaskModal()"
-              class="px-4 py-2 rounded-lg border hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-            <button
-              (click)="createTask()"
-              class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
-            >
-              Create
-            </button>
+            <div class="flex justify-end gap-3 mt-6">
+              <button
+                (click)="closeTaskModal()"
+                class="px-4 py-2 rounded-lg border hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                (click)="createTask()"
+                class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
+              >
+                Create
+              </button>
+            </div>
           </div>
         </div>
-      </div>
       }
     </div>
-    @if(errorMessage()) {
-    <div class="fixed bottom-6 right-6 bg-red-600 text-white px-4 py-2 rounded shadow">
-      {{ errorMessage() }}
-    </div>
+    @if (errorMessage()) {
+      <div class="fixed bottom-6 right-6 bg-red-600 text-white px-4 py-2 rounded shadow">
+        {{ errorMessage() }}
+      </div>
     }
   `,
 })
@@ -295,7 +299,7 @@ export class ProjectPage implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private projectResource: ProjectResource,
-    private userResource: UsersResource
+    private userResource: UsersResource,
   ) {}
 
   project = signal<Project | null>(null);
@@ -447,9 +451,9 @@ export class ProjectPage implements OnInit {
           status: 'COMPLETED',
         });
       },
-      error: (err: ErrorModel) => {
-        this.errorMessage.set(err?.detail ||'Failed to mark project as completed');
+      error: (err) => {
         console.error('Failed to mark project as completed', err);
+        this.errorMessage.set(err.error.detail || 'Failed to mark project as completed');
         setTimeout(() => this.errorMessage.set(null), 3000);
       },
     });

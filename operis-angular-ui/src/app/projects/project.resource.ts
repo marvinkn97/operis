@@ -5,12 +5,13 @@ import { PagedProjectResponse } from './paged-project-response.model';
 import { ProjectRequest } from './project.request';
 import { ProjectUpdateRequest } from './project-update.request';
 import { ProjectInvitationRequest } from './project-invitation.request';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ProjectResource {
   constructor(private http: HttpClient) {}
 
-  private readonly baseUrl = 'http://localhost:37885/api/v1/projects';
+  private readonly baseUrl =  environment.apiUrl + '/api/v1/projects';
 
   projects = signal<Project[]>([]);
   loading = signal(false);

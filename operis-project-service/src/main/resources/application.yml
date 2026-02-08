@@ -23,7 +23,6 @@ management:
         include:
           - health
           - busrefresh
-          - shutdown
           - prometheus
           - metrics
   prometheus:
@@ -50,13 +49,12 @@ management:
     tracing:
       export:
         otlp:
-          endpoint: http://localhost:4317
-          transport: grpc
+          endpoint: http://localhost:4318/v1/traces
+          transport: http
   otlp:
     metrics:
       export:
-        enabled: off
-
+        enabled: false
 
 logging:
   file:
