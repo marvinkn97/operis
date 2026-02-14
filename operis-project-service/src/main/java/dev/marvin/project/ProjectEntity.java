@@ -69,16 +69,6 @@ public class ProjectEntity {
     @Column(insertable = false)
     private UUID updatedBy;
 
-    public void addMember(UUID memberId) {
-        if (!memberIds.contains(memberId)) {
-            memberIds.add(memberId);
-        }
-    }
-
-    public void removeMember(UUID memberId) {
-        memberIds.removeIf(_ -> memberIds.contains(memberId));
-    }
-
     @Transient
     public Integer getProgressPercentage() {
         if (totalTasks == 0 || completedTasks == 0) return 0;

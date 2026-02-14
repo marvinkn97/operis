@@ -1,16 +1,22 @@
 package dev.marvin.projectinvitation;
 
+import dev.marvin.BadRequestException;
 import dev.marvin.project.ProjectEntity;
 import dev.marvin.project.ProjectRepository;
-import jakarta.ws.rs.BadRequestException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -19,14 +25,30 @@ import java.util.UUID;
 public class ProjectInvitationService {
     private final ProjectRepository projectRepository;
     private final ProjectInvitationRepository projectInvitationRepository;
+    private final RabbitTemplate rabbitTemplate;
+    private final Validator validator;
 
-    @Transactional
+    @Value("${rabbitmq.routing.new}")
+    private String newInviteRoutingKey;
+    @Value("${rabbitmq.routing.accept}")
+    private String acceptRoutingKey;
+    @Value("${rabbitmq.routing.reject}")
+    private String rejectRoutingKey;
+
     public void createInvitation(ProjectInvitationRequest request, Authentication authentication) {
         ProjectEntity project = projectRepository.findByIdAndArchived(request.projectId(), false)
-                .orElseThrow(() -> new IllegalArgumentException("Project with given id [%s] not found".formatted(request.projectId())));
+                .orElseThrow(() -> new BadRequestException("Project with given id [%s] not found".formatted(request.projectId())));
 
         if (!project.getOwnerId().equals(UUID.fromString(authentication.getName()))) {
             throw new BadRequestException("Only project owner can invite members");
+        }
+
+        // Prevent self-invitation
+        if (authentication instanceof JwtAuthenticationToken jwtAuth) {
+            String userEmail = jwtAuth.getToken().getClaimAsString("email");
+            if (request.recipientEmail().equalsIgnoreCase(userEmail)) {
+                throw new dev.marvin.BadRequestException("You cannot invite yourself to a project");
+            }
         }
 
         projectInvitationRepository.findByProjectEntity_IdAndRecipientEmail(project.getId(), request.recipientEmail())
@@ -37,21 +59,27 @@ public class ProjectInvitationService {
                             .recipientEmail(request.recipientEmail())
                             .build();
 
-                    projectInvitationRepository.save(invitation);
+                    invitation = projectInvitationRepository.saveAndFlush(invitation);
+                    ProjectInvitationEvent projectInvitationEvent = new ProjectInvitationEvent(
+                            request.recipientName(),
+                            request.recipientEmail(),
+                            project.getId(),
+                            project.getName(),
+                            project.getDescription(),
+                            invitation.getId());
 
-                    // publish event - > consumer -> notification, callToAction...
+                    Set<ConstraintViolation<ProjectInvitationEvent>> violations = validator.validate(projectInvitationEvent);
 
-                    /*
-                    Metadata
-                    1. Project - name, description
-                    2. Recipient - name, email
-                    * */
+                    if (!violations.isEmpty()) {
+                        throw new ConstraintViolationException(violations);
+                    }
 
+                    rabbitTemplate.convertAndSend(newInviteRoutingKey, projectInvitationEvent);
                 });
     }
 
     @Transactional
-    public void acceptInvitation(UUID invitationId, Authentication authentication) {
+    public void acceptInvitation(UUID invitationId, Authentication authentication, UUID ctaId) {
         ProjectInvitationEntity invitation = projectInvitationRepository.findById(invitationId)
                 .orElseThrow(() -> new BadRequestException("Invitation with given id [%s] not found".formatted(invitationId)));
 
@@ -73,12 +101,15 @@ public class ProjectInvitationService {
 
         invitation.setAcceptedAt(Instant.now());
         invitation.setStatus(ProjectInvitationStatus.ACCEPTED);
+        invitation.getProjectEntity().getMemberIds().add(UUID.fromString(jwtAuth.getToken().getClaimAsString("sub")));
         projectInvitationRepository.save(invitation);
+
+        rabbitTemplate.convertAndSend(acceptRoutingKey, new ProjectInvitationResolveEvent(ctaId));
     }
 
 
     @Transactional
-    public void rejectInvitation(UUID invitationId, Authentication authentication) {
+    public void rejectInvitation(UUID invitationId, Authentication authentication, UUID ctaId) {
         ProjectInvitationEntity invitation = projectInvitationRepository.findById(invitationId)
                 .orElseThrow(() -> new BadRequestException("Invitation with given id [%s] not found".formatted(invitationId)));
 
@@ -101,6 +132,8 @@ public class ProjectInvitationService {
         invitation.setRejectedAt(Instant.now());
         invitation.setStatus(ProjectInvitationStatus.REJECTED);
         projectInvitationRepository.save(invitation);
+
+        rabbitTemplate.convertAndSend(rejectRoutingKey, new ProjectInvitationResolveEvent(ctaId));
     }
 
 }

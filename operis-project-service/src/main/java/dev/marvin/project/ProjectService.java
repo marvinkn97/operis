@@ -153,4 +153,24 @@ public class ProjectService {
         log.info("Project {} closed", projectEntity.getId());
     }
 
+    public void removeMember(UUID projectId, UUID memberId, Authentication authentication) {
+        log.info("Removing member {} from project {}", memberId, projectId);
+        ProjectEntity project = projectRepository.findByIdAndArchived(projectId, false)
+                .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND.formatted(projectId)));
+
+        UUID ownerId = UUID.fromString(authentication.getName());
+
+        if (!project.getOwnerId().equals(ownerId)) {
+            throw new BadRequestException("Only the project owner can remove members");
+        }
+
+        boolean removed = project.getMemberIds().remove(memberId);
+        if (!removed) {
+            throw new ResourceNotFoundException("Member not found in project");
+        }
+
+        projectRepository.save(project);
+    }
+
+
 }

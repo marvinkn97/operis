@@ -11,7 +11,7 @@ import { environment } from '../../environments/environment';
 export class ProjectResource {
   constructor(private http: HttpClient) {}
 
-  private readonly baseUrl =  environment.apiUrl + '/api/v1/projects';
+  private readonly baseUrl = environment.apiUrl + '/api/v1/projects';
 
   projects = signal<Project[]>([]);
   loading = signal(false);
@@ -76,10 +76,7 @@ export class ProjectResource {
     return this.http.patch<void>(`${this.baseUrl}/${id}/close`, {});
   }
 
-  /**
-   * Invite a user to a project
-   */
-  inviteUserToProject(projectId: string, request: ProjectInvitationRequest) {
-    return this.http.post<void>(`${this.baseUrl}/${projectId}/invitations`, request);
+  removeMember(projectId: string, memberId: string) {
+    return this.http.patch<void>(`${this.baseUrl}/${projectId}/members/remove`, { memberId }); // pass as JSON body);
   }
 }

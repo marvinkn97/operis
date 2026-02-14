@@ -2,12 +2,24 @@ export interface Action {
   id: string;
   type: ActionType;
   details: string;
-  from: string;
-  time: string; // e.g., "5 minutes ago"
+  createdAt: string;
+  metadata: string;
 }
 
 export enum ActionType {
-  PROJECT_INVITATION = 'Project Invitation',
-  TASK_ASSIGNMENT = 'Task Assignment',
+  PROJECT_INVITATION = 'PROJECT_INVITATION',
+  TASK_ASSIGNMENT = 'TASK_ASSIGNMENT',
 }
 
+export interface PagedCTAResponse {
+  _embedded?: {
+    callToActionResponseList: Action[];
+  };
+  page: {
+    number: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+  };
+  _links: any;
+}

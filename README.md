@@ -1,18 +1,20 @@
 # OPERIS
 
-**Operis** is a web-based workload and project management application designed to simplify collaboration for businesses and individuals. It allows users to break down projects into tasks, distribute work among team members, and track progress while maintaining a clear, comprehensive view of overall project advancement.
+The **Operis** project aims to simplify project management for businesses and individuals
+through a web application for workload management. This solution will allow for breaking
+down projects into tasks, distributing them among team members, and tracking their
+progress, all while offering a comprehensive overview of the overall advancement.
 
-Operis follows a **Freemium business model**:
-- **Free tier**: Core features such as managing users, projects, members, and tasks.
-- **Paid tier**: Advanced features like CSV task exports based on filtering criteria.
+Operis's business model is based on the Freemium model, offering free basic features such
+as the creation, modification, and deletion of projects, as well as the management of
+members and tasks, among others. Advanced features, such as the CSV export of project
+tasks, will be available with a paid subscription.
 
-Users can manage their accounts and switch between **Free** and **Premium** modes at any time, upgrading as needed based on budgets and feature requirements.
-
+In addition to its functionalities, Operis offers user account management and a mechanism to
+switch from free to premium mode, and vice versa. This approach will allow users to benefit
+from the features necessary for their needs while having the possibility to upgrade to more
+advanced features according to their requirements and budget.
 ---
-
-- During modification:
-    - Members and tasks can be added, updated, and deleted.
-
 
 #### 6. Task Management
 

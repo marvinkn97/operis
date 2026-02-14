@@ -1,100 +1,170 @@
 import { Component, HostListener, signal } from '@angular/core';
 import { Action, ActionType } from '../../actions/action-center/action.model';
+import { ActionCenterService } from '../cta.resource';
+import { ProjectInvitationsResource } from '../../projects/project-invitations.resource';
 
 @Component({
   selector: 'app-action-center',
   standalone: true,
   template: `
-    <div class="p-6 max-w-6xl mx-auto">
-      <h1 class="text-3xl font-bold mb-2">Action Center</h1>
+    <div class="p-4 sm:p-6 max-w-6xl mx-auto">
+      <!-- Header -->
+      <h1 class="text-2xl sm:text-3xl font-bold mb-2">Action Center</h1>
       <p class="text-gray-600 mb-6">
         You have {{ actions().length }} pending actions that require your attention.
       </p>
 
-      <!-- Headers for large screens -->
-      <div class="hidden sm:flex justify-between bg-gray-50 p-3 rounded-xl font-semibold text-gray-600 mb-2">
-        <span class="sm:w-32">Type</span>
-        <span class="flex-1 sm:ml-4">Details</span>
-        <span class="sm:w-32 text-center">From</span>
-        <span class="sm:w-32 text-center">Time</span>
-        <span class="sm:w-48 text-right">Actions</span>
+      <!-- Desktop Header (hidden on mobile) -->
+      <div
+        class="hidden sm:grid grid-cols-[minmax(100px,120px)_1fr_minmax(80px,120px)_minmax(150px,auto)] gap-4 bg-gray-50 px-4 py-3 rounded-xl font-semibold text-gray-600 mb-3"
+      >
+        <span>Type</span>
+        <span>Details</span>
+        <span class="text-center">Time</span>
+        <span class="text-right">Actions</span>
       </div>
 
-      <!-- Pending Actions List -->
-      <div class="space-y-4">
-        @for(action of actions(); track action.id) {
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white rounded-xl shadow hover:shadow-lg transition">
+      <!-- Actions List -->
+      <div class="space-y-3">
+        @for (action of actions(); track action.id) {
+          <div class="bg-white rounded-xl shadow hover:shadow-md transition p-4">
+            <!-- MOBILE LAYOUT -->
+            <div class="flex flex-col gap-3 sm:hidden">
+              <!-- Top Row: Type + Time -->
+              <div class="flex items-start justify-between gap-4">
+                <span
+                  class="px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
+                  [class]="ActionTypeColors[action.type]"
+                >
+                  {{ action.type }}
+                </span>
 
-            <!-- Type -->
-            <div class="sm:w-32 shrink-0 mb-1 sm:mb-0">
-              <span
-                class="px-2 py-1 rounded-full text-xs font-semibold"
-                [class]="ActionTypeColors[action.type]"
-              >
-                {{ action.type }}
-              </span>
+                <span class="text-xs text-gray-500 whitespace-nowrap">
+                  {{ action.createdAt }}
+                </span>
+              </div>
+
+              <!-- Details -->
+              <p class="text-gray-700 text-sm leading-relaxed wrap-break-word">
+                {{ action.details }}
+              </p>
+
+              <!-- Buttons -->
+              <div class="flex flex-col xs:flex-row gap-2">
+                <button
+                  (click)="viewAction(action)"
+                  class="w-full xs:w-auto px-3 py-2 rounded-lg border border-blue-500 text-blue-600 text-sm font-medium hover:bg-blue-50 transition"
+                >
+                  View
+                </button>
+                <button
+                  (click)="acceptAction(action)"
+                  class="w-full xs:w-auto px-3 py-2 rounded-lg border border-green-500 text-green-600 text-sm font-medium hover:bg-green-50 transition"
+                >
+                  Accept
+                </button>
+                <button
+                  (click)="rejectAction(action)"
+                  class="w-full xs:w-auto px-3 py-2 rounded-lg border border-red-500 text-red-600 text-sm font-medium hover:bg-red-50 transition"
+                >
+                  Reject
+                </button>
+              </div>
             </div>
 
-            <!-- Details -->
-            <div class="flex-1 text-gray-700 truncate mb-1 sm:mb-0 sm:ml-4">
-              {{ action.details }}
-            </div>
+            <!-- Desktop layout -->
+            <div
+              class="hidden sm:grid grid-cols-[150px_1fr_minmax(80px,120px)_minmax(150px,auto)] gap-4 items-start"
+            >
+              <!-- Type -->
+              <div class="shrink-0">
+                <span
+                  class="px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
+                  [class]="ActionTypeColors[action.type]"
+                >
+                  {{ action.type }}
+                </span>
+              </div>
 
-            <!-- From -->
-            <div class="sm:w-32 text-gray-500 text-center mb-1 sm:mb-0">
-              {{ action.from }}
-            </div>
+              <!-- Details -->
+              <div class="text-gray-700 min-w-0">
+                <p
+                  class="text-sm leading-relaxed wrap-break-word whitespace-normal"
+                  [title]="action.details"
+                >
+                  {{ action.details }}
+                </p>
+              </div>
 
-            <!-- Time -->
-            <div class="sm:w-32 text-gray-500 text-center mb-1 sm:mb-0">
-              {{ action.time }}
-            </div>
+              <!-- Time -->
+              <div class="text-gray-500 text-sm text-center whitespace-nowrap">
+                {{ action.createdAt }}
+              </div>
 
-            <!-- Actions -->
-            <div class="flex gap-2 justify-end sm:w-48">
-              <button
-                (click)="viewAction(action)"
-                class="flex items-center gap-1 px-2 py-1 rounded-lg border border-blue-500 text-blue-500 text-sm font-medium hover:bg-blue-50 transition"
-              >
-                View
-              </button>
-              <button
-                (click)="acceptAction(action.id)"
-                class="flex items-center gap-1 px-2 py-1 rounded-lg border border-green-500 text-green-500 text-sm font-medium hover:bg-green-50 transition"
-              >
-                Accept
-              </button>
-              <button
-                (click)="rejectAction(action.id)"
-                class="flex items-center gap-1 px-2 py-1 rounded-lg border border-red-500 text-red-500 text-sm font-medium hover:bg-red-50 transition"
-              >
-                Reject
-              </button>
+              <!-- Actions -->
+              <div class="flex gap-2 justify-end min-w-0">
+                <button
+                  (click)="viewAction(action)"
+                  class="shrink-0 px-3 py-1.5 rounded-lg border border-blue-500 text-blue-600 text-sm font-medium hover:bg-blue-50 transition whitespace-nowrap"
+                >
+                  View
+                </button>
+                <button
+                  (click)="acceptAction(action)"
+                  class="shrink-0 px-3 py-1.5 rounded-lg border border-green-500 text-green-600 text-sm font-medium hover:bg-green-50 transition whitespace-nowrap"
+                >
+                  Accept
+                </button>
+                <button
+                  (click)="rejectAction(action)"
+                  class="shrink-0 px-3 py-1.5 rounded-lg border border-red-500 text-red-600 text-sm font-medium hover:bg-red-50 transition whitespace-nowrap"
+                >
+                  Reject
+                </button>
+              </div>
             </div>
           </div>
         }
       </div>
 
-      <!-- Infinite Scroll Loading -->
-      @if(loading()) {
-        <p class="mt-4 text-center text-gray-500">Loading more actions...</p>
-      }
-      @if(!hasMore() && actions().length > 0) {
-        <p class="mt-4 text-center text-gray-400">No more actions</p>
+      <!-- Loading -->
+      @if (loading()) {
+        <p class="mt-6 text-center text-gray-500">Loading more actions...</p>
       }
 
-      <!-- Action Details Modal -->
-      @if(showModal()) {
-        <div class="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div class="bg-white p-6 rounded-xl shadow-xl w-96">
+      <!-- No More -->
+      @if (!hasMore() && actions().length > 0) {
+        <p class="mt-6 text-center text-gray-400">No more actions</p>
+      }
+
+      <!-- Empty State -->
+      @if (!loading() && actions().length === 0) {
+        <div class="mt-12 text-center text-gray-500">
+          <p class="text-lg font-medium">No pending actions</p>
+          <p class="text-sm mt-1">You're all caught up</p>
+        </div>
+      }
+
+      <!-- Modal -->
+      @if (showModal()) {
+        <div class="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
+          <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
             <h2 class="text-xl font-semibold mb-4">Action Details</h2>
-            <p><strong>Type:</strong> {{ selectedAction?.type }}</p>
-            <p><strong>Details:</strong> {{ selectedAction?.details }}</p>
-            <p><strong>From:</strong> {{ selectedAction?.from }}</p>
-            <p><strong>Time:</strong> {{ selectedAction?.time }}</p>
+
+            <div class="space-y-2 text-sm text-gray-700">
+              <p><strong>Type:</strong> {{ selectedAction?.type }}</p>
+              <p><strong>Details:</strong></p>
+              <p class="bg-gray-50 p-3 rounded-lg wrap-break-word">
+                {{ selectedAction?.details }}
+              </p>
+              <p><strong>Time:</strong> {{ selectedAction?.createdAt }}</p>
+            </div>
 
             <div class="flex justify-end gap-3 mt-6">
-              <button (click)="closeModal()" class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition">
+              <button
+                (click)="closeModal()"
+                class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
+              >
                 Close
               </button>
             </div>
@@ -102,6 +172,71 @@ import { Action, ActionType } from '../../actions/action-center/action.model';
         </div>
       }
     </div>
+
+    <!-- Modal -->
+    @if (showModal()) {
+      <div class="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
+          <!-- Header -->
+          <h2 class="text-xl font-semibold mb-4 text-gray-800">Action Details</h2>
+
+          <!-- Action Info -->
+          <div class="space-y-3 text-sm text-gray-700">
+            <!-- Type -->
+            <p>
+              <span
+                class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                [class]="ActionTypeColors[selectedAction!.type]"
+              >
+                {{ selectedAction?.type }}
+              </span>
+            </p>
+
+            <!-- Time -->
+            <p><strong>Time:</strong> {{ selectedAction?.createdAt }}</p>
+
+            <!-- Details -->
+            <p>
+              <strong>Details:</strong>
+            </p>
+
+            <!-- Project Info -->
+            @if (selectedActionMetadata) {
+              <div class="bg-gray-50 p-3 rounded-lg space-y-2">
+                <p>
+                  <strong>Project Name: </strong>
+                  <span class="font-medium">{{ selectedActionMetadata?.projectName }}</span>
+                </p>
+                <p>
+                  <strong>Project Description: </strong>
+                  <span>{{ selectedActionMetadata?.projectDescription }}</span>
+                </p>
+              </div>
+            }
+          </div>
+
+          <!-- Footer Buttons -->
+          <div class="flex justify-end gap-3 mt-6">
+            <button (click)="closeModal()" class="px-4 py-2 rounded-lg border hover:bg-gray-100">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Accept notifications -->
+    @if (successMessage()) {
+      <div class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded shadow">
+        {{ successMessage() }}
+      </div>
+    }
+
+    @if (errorMessage()) {
+      <div class="fixed bottom-6 right-6 bg-red-600 text-white px-4 py-2 rounded shadow">
+        {{ errorMessage() }}
+      </div>
+    }
   `,
 })
 export class ActionCenter {
@@ -111,12 +246,21 @@ export class ActionCenter {
   showModal = signal(false);
   selectedAction: Action | null = null;
 
+  successMessage = signal<string | null>(null);
+  errorMessage = signal<string | null>(null);
+
   readonly ActionTypeColors: Record<ActionType, string> = {
     [ActionType.PROJECT_INVITATION]: 'bg-blue-100 text-blue-800',
     [ActionType.TASK_ASSIGNMENT]: 'bg-green-100 text-green-800',
   };
 
-  constructor() {
+  private page = 0;
+  private pageSize = 10;
+
+  constructor(
+    private actionService: ActionCenterService,
+    private projectInvitationsResource: ProjectInvitationsResource,
+  ) {
     this.loadActions();
   }
 
@@ -125,21 +269,15 @@ export class ActionCenter {
 
     this.loading.set(true);
 
-    setTimeout(() => {
-      const types = [ActionType.PROJECT_INVITATION, ActionType.TASK_ASSIGNMENT];
-      const newActions: Action[] = Array.from({ length: 20 }).map((_, i) => ({
-        id: (this.actions().length + i + 1).toString(),
-        type: types[Math.floor(Math.random() * types.length)],
-        details: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-        from: ['Alice', 'Bob', 'Charlie'][Math.floor(Math.random() * 3)],
-        time: `${Math.floor(Math.random() * 60)} minutes ago`,
-      }));
-
-      this.actions.set([...this.actions(), ...newActions]);
-      this.loading.set(false);
-
-      if (this.actions().length >= 100) this.hasMore.set(false);
-    }, 1000);
+    this.actionService.getActions(this.page, this.pageSize).subscribe({
+      next: ({ actions, hasMore }) => {
+        this.actions.set([...this.actions(), ...actions]);
+        this.hasMore.set(hasMore);
+        this.page++;
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false),
+    });
   }
 
   @HostListener('window:scroll')
@@ -159,11 +297,38 @@ export class ActionCenter {
     this.selectedAction = null;
   }
 
-  acceptAction(id: string) {
-    this.actions.set(this.actions().filter((a) => a.id !== id));
+  acceptAction(action: Action) {
+    const metadata = JSON.parse(action.metadata);
+    const invitationId = metadata.invitationId;
+
+    this.projectInvitationsResource.acceptInvitation(invitationId, action.id).subscribe({
+      next: () => {
+        this.actions.set(this.actions().filter((a) => a.id !== action.id));
+        this.successMessage.set('Invitation accepted');
+      },
+      error: () => this.errorMessage.set('Failed to accept invitation'),
+    });
   }
 
-  rejectAction(id: string) {
-    this.actions.set(this.actions().filter((a) => a.id !== id));
+  rejectAction(action: Action) {
+    const metadata = JSON.parse(action.metadata);
+    const invitationId = metadata.invitationId;
+
+    this.projectInvitationsResource.rejectInvitation(invitationId, action.id).subscribe({
+      next: () => {
+        this.actions.set(this.actions().filter((a) => a.id !== action.id));
+        this.successMessage.set('Invitation rejected');
+      },
+      error: () => this.errorMessage.set('Failed to reject invitation'),
+    });
+  }
+
+  get selectedActionMetadata() {
+    if (!this.selectedAction?.metadata) return null;
+    try {
+      return JSON.parse(this.selectedAction.metadata);
+    } catch {
+      return null;
+    }
   }
 }

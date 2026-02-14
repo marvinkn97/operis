@@ -20,12 +20,12 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
     provideOAuthClient(), // if using standalone API
-    provideAppInitializer(async () => {
+    provideAppInitializer(() => {
       const oauthService = inject(OAuthService);
       oauthService.configure(authConfig);
       oauthService.setupAutomaticSilentRefresh();
 
-      return oauthService.loadDiscoveryDocumentAndTryLogin().then(() => {
+      oauthService.loadDiscoveryDocumentAndTryLogin().then(() => {
         // Remove auth code from URL
         if (window.location.search.includes('code=')) {
           window.history.replaceState({}, document.title, window.location.pathname);

@@ -19,6 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -92,4 +93,20 @@ public class ProjectController {
         projectService.closeProject(projectId, authentication);
         return ResponseEntity.ok().build();
     }
+    @PatchMapping("/{id}/members/remove")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Remove a member from a project")
+    public ResponseEntity<Void> removeMember(@Parameter @PathVariable("id") UUID projectId, @RequestBody Map<String, String> body, @NonNull Authentication authentication) {
+        String memberIdStr = body.get("memberId");
+        if (memberIdStr == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        UUID memberId = UUID.fromString(memberIdStr);
+        log.info("REMOVE_MEMBER_REQUEST projectId={} memberId={}", projectId, memberId);
+        projectService.removeMember(projectId, memberId, authentication);
+        return ResponseEntity.ok().build();
+    }
+
+
 }

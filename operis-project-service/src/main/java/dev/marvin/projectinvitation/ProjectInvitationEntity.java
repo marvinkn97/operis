@@ -33,8 +33,8 @@ public class ProjectInvitationEntity {
     @Column(length = 36, updatable = false, nullable = false)
     private UUID id;
     
-    @ManyToOne
-    @JoinColumn(name = "project_id", nullable = false)
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "project_id", nullable = false, columnDefinition = "UUID")
     private ProjectEntity projectEntity;
 
     @Column(nullable = false)
@@ -68,9 +68,9 @@ public class ProjectInvitationEntity {
 
     @CreatedBy
     @Column(updatable = false, nullable = false)
-    private String createdBy;
+    private UUID createdBy;
 
     @LastModifiedBy
     @Column(insertable = false)
-    private String updatedBy;
+    private UUID updatedBy;
 }

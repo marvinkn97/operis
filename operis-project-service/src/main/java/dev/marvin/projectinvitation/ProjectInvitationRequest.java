@@ -1,13 +1,13 @@
 package dev.marvin.projectinvitation;
 
-import jakarta.annotation.Nonnull;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
 public record ProjectInvitationRequest(
-        @Nonnull
+        @NotNull
         UUID projectId,
 
         @NotBlank

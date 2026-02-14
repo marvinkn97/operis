@@ -6,6 +6,7 @@ import { ProjectResource } from '../project.resource';
 import { Project } from '../project.model';
 import { UsersResource } from '../../users/users.resource';
 import { User } from '../../users/user.model';
+import { ProjectInvitationsResource } from '../project-invitations.resource';
 
 type Task = {
   id: string;
@@ -293,6 +294,12 @@ type Task = {
         {{ errorMessage() }}
       </div>
     }
+
+    @if (successMessage()) {
+      <div class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded shadow">
+        {{ successMessage() }}
+      </div>
+    }
   `,
 })
 export class ProjectPage implements OnInit {
@@ -300,10 +307,12 @@ export class ProjectPage implements OnInit {
     private route: ActivatedRoute,
     private projectResource: ProjectResource,
     private userResource: UsersResource,
+    private invitationResource: ProjectInvitationsResource,
   ) {}
 
   project = signal<Project | null>(null);
   errorMessage = signal<string | null>(null);
+  successMessage = signal<string | null>(null);
 
   // Members
   members = signal<User[]>([]);
@@ -402,25 +411,6 @@ export class ProjectPage implements OnInit {
     this.inviteForm = { name: '', email: '' };
   }
 
-  inviteMember() {
-    if (!this.inviteForm.name || !this.inviteForm.email) return;
-
-    this.members.update((m) => [
-      ...m,
-      {
-        id: crypto.randomUUID(),
-        firstName: this.inviteForm.name,
-        lastName: this.inviteForm.name,
-        email: this.inviteForm.email,
-      },
-    ]);
-    this.closeInviteModal();
-  }
-
-  removeMember(id: string) {
-    this.members.update((m) => m.filter((x) => x.id !== id));
-  }
-
   toggleAssignee(member: User) {
     const exists = this.newTask.assignees.find((a) => a.id === member.id);
     this.newTask.assignees = exists
@@ -454,6 +444,61 @@ export class ProjectPage implements OnInit {
       error: (err) => {
         console.error('Failed to mark project as completed', err);
         this.errorMessage.set(err.error.detail || 'Failed to mark project as completed');
+        setTimeout(() => this.errorMessage.set(null), 3000);
+      },
+    });
+  }
+
+  inviteMember() {
+    const projectData = this.project();
+    if (!projectData) return;
+
+    if (!this.inviteForm.name || !this.inviteForm.email) return;
+
+    this.invitationResource
+      .inviteUserToProject({
+        projectId: projectData.id,
+        recipientName: this.inviteForm.name,
+        recipientEmail: this.inviteForm.email,
+      })
+      .subscribe({
+        next: () => {
+          // ✅ Success popup
+          this.successMessage.set('Invitation sent successfully');
+          setTimeout(() => this.successMessage.set(null), 3000);
+
+          // Close modal
+          this.closeInviteModal();
+        },
+        error: (err: any) => {
+          console.error('Invite failed', err);
+          this.closeInviteModal();
+
+          // ❌ Error popup
+          this.errorMessage.set(err?.error?.detail || 'Failed to send invitation');
+          setTimeout(() => this.errorMessage.set(null), 3000);
+        },
+      });
+  }
+
+  removeMember(memberId: string) {
+    const projectData = this.project();
+    if (!projectData) return;
+
+    this.projectResource.removeMember(projectData.id, memberId).subscribe({
+      next: () => {
+        // ✅ Update UI ONLY after backend success
+        this.members.update((m) => m.filter((x) => x.id !== memberId));
+
+        // ✅ Success toast
+        this.successMessage.set('Member removed successfully');
+        setTimeout(() => this.successMessage.set(null), 3000);
+      },
+      error: (err) => {
+        console.error('Failed to remove member', err);
+
+        // ❌ Error toast
+        this.errorMessage.set(err?.error?.detail || 'Failed to remove member');
         setTimeout(() => this.errorMessage.set(null), 3000);
       },
     });

@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -25,26 +26,41 @@ public class ProjectInvitationController {
     @PostMapping
     @PreAuthorize("hasRole('USER')")
     @Operation(summary = "Invite a user to a project")
-    public ResponseEntity<Void> inviteToProject(
-            @Valid @RequestBody ProjectInvitationRequest request,
-            @NonNull Authentication authentication) {
+    public ResponseEntity<Void> inviteToProject(@Valid @RequestBody ProjectInvitationRequest request, @NonNull Authentication authentication) {
+       log.info("INVITE_TO_PROJECT_REQUEST request={}", request);
         projectInvitationService.createInvitation(request, authentication);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @Operation(summary = "Accept project invitation")
     @PreAuthorize("hasRole('USER')")
-    @PostMapping("/{id}/accept")
-    public ResponseEntity<Void> acceptInvitation(@PathVariable("id") UUID invitationId, @NonNull Authentication authentication) {
-        projectInvitationService.acceptInvitation(invitationId, authentication);
+    @PatchMapping("/{id}/accept")
+    public ResponseEntity<Void> acceptInvitation(@PathVariable("id") UUID invitationId, @NonNull Authentication authentication, @RequestBody Map<String, String> body) {
+        log.info("ACCEPT_INVITATION_REQUEST invitationId={} body={}", invitationId, body);
+
+        String ctaIdStr = body.get("ctaId");
+        if (ctaIdStr == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        UUID ctaId = UUID.fromString(ctaIdStr);
+        projectInvitationService.acceptInvitation(invitationId, authentication, ctaId);
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Reject project invitation")
     @PreAuthorize("hasRole('USER')")
-    @PostMapping("/{id}/reject")
-    public ResponseEntity<Void> rejectInvitation(@PathVariable("id") UUID invitationId, @NonNull Authentication authentication) {
-        projectInvitationService.rejectInvitation(invitationId, authentication);
+    @PatchMapping("/{id}/reject")
+    public ResponseEntity<Void> rejectInvitation(@PathVariable("id") UUID invitationId, @NonNull Authentication authentication, @RequestBody Map<String, String> body) {
+       log.info("REJECT_INVITATION_REQUEST invitationId={} body={}", invitationId, body);
+
+        String ctaIdStr = body.get("ctaId");
+        if (ctaIdStr == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        UUID ctaId = UUID.fromString(ctaIdStr);
+        projectInvitationService.rejectInvitation(invitationId, authentication, ctaId);
         return ResponseEntity.ok().build();
     }
 

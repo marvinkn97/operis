@@ -1,26 +1,40 @@
 package dev.marvin;
 
-import lombok.Builder;
-import lombok.Data;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.MongoId;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.UUID;
 
-@Data
+
+@Entity
+@Table(name = "call_to_actions")
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 @Builder
-@Document(collection = "call_to_actions")
 public class CallToActionEntity {
-    @MongoId
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+    @Enumerated(EnumType.STRING)
     private CallToActionType type;
     @Builder.Default
+    @Enumerated(EnumType.STRING)
     private CallToActionStatus status = CallToActionStatus.PENDING;
+    @Enumerated(EnumType.STRING)
     private CallToActionTarget target;
-    private String targetId;
+    private UUID targetId;
     private String targetEmail;
-    private Map<String, Object> metadata; //JSON metadata for generic UI behavior
+    private UUID referenceId;
+    @Column(columnDefinition = "TEXT")
+    private String metadata; //JSON metadata for generic UI behavior
+    @CreationTimestamp
     private Instant createdAt;
+    @UpdateTimestamp
+    private Instant updatedAt;
 }
+

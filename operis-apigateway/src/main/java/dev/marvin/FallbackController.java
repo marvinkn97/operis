@@ -13,20 +13,11 @@ import java.time.Instant;
 @RestController
 public class FallbackController {
 
-    @GetMapping("/fallback/projects")
+    @GetMapping("/fallback")
     public Mono<ResponseEntity<ProblemDetail>> fallbackProjects() {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
-        problem.setTitle("Project Service Unavailable");
-        problem.setDetail("The project service is currently unavailable. Please try again later.");
-        problem.setProperty("timestamp", Instant.now(Clock.systemUTC()));
-        return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(problem));
-    }
-
-    @GetMapping("/fallback/users")
-    public Mono<ResponseEntity<ProblemDetail>> fallbackUsers() {
-        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
-        problem.setTitle("User Service Unavailable");
-        problem.setDetail("The user service is currently unavailable. Please try again later.");
+        problem.setTitle("Service Unavailable");
+        problem.setDetail("An error occurred. Please try again later or contact support team.");
         problem.setProperty("timestamp", Instant.now(Clock.systemUTC()));
         return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(problem));
     }

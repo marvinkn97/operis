@@ -4,10 +4,8 @@ server:
 spring:
   application:
     name: operis-notification-service
-
   config:
     import: optional:configserver:/
-
   cloud:
     config:
       discovery:

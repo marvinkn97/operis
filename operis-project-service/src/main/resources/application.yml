@@ -1,19 +1,15 @@
 server:
   port: 0
-
 spring:
   application:
     name: operis-project-service
-
   config:
     import: optional:configserver:/
-
   cloud:
     config:
       discovery:
         enabled: true
         service-id: operis-configuration-server
-
 management:
   server:
     port: 9091
@@ -55,7 +51,6 @@ management:
     metrics:
       export:
         enabled: false
-
 logging:
   file:
     name: logs/${spring.application.name}.log
@@ -63,5 +58,13 @@ logging:
     rollingpolicy:
       max-file-size: 10MB
       max-history: 7
-
-
+rabbitmq:
+  exchange:
+    name: project.invitation.exchange
+  routing:
+    new: project.invite
+    accept: project.invitation.accept
+    reject: project.invitation.reject
+  queue:
+    notification-service: project.invitation.notification.queue
+    cta-service: project.invitation.cta.queue

@@ -1,10 +1,13 @@
 package dev.marvin;
 
+import java.time.Instant;
+import java.util.UUID;
+
 public record CallToActionResponse(
-        String title,
+        UUID id,
         CallToActionType type,
-        String description,
-        CallToActionStatus status
+        String metadata,
+        Instant createdAt
 ) {
 
 }
