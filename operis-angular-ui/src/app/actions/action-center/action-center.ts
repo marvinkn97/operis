@@ -2,6 +2,7 @@ import { Component, HostListener, signal } from '@angular/core';
 import { Action, ActionType } from '../../actions/action-center/action.model';
 import { ActionCenterService } from '../cta.resource';
 import { ProjectInvitationsResource } from '../../projects/project-invitations.resource';
+import { TaskResource } from '../../tasks/task.resource';
 
 @Component({
   selector: 'app-action-center',
@@ -144,78 +145,103 @@ import { ProjectInvitationsResource } from '../../projects/project-invitations.r
           <p class="text-sm mt-1">You're all caught up</p>
         </div>
       }
-
-      <!-- Modal -->
-      @if (showModal()) {
-        <div class="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
-          <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
-            <h2 class="text-xl font-semibold mb-4">Action Details</h2>
-
-            <div class="space-y-2 text-sm text-gray-700">
-              <p><strong>Type:</strong> {{ selectedAction?.type }}</p>
-              <p><strong>Details:</strong></p>
-              <p class="bg-gray-50 p-3 rounded-lg wrap-break-word">
-                {{ selectedAction?.details }}
-              </p>
-              <p><strong>Time:</strong> {{ selectedAction?.createdAt }}</p>
-            </div>
-
-            <div class="flex justify-end gap-3 mt-6">
-              <button
-                (click)="closeModal()"
-                class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      }
     </div>
 
     <!-- Modal -->
-    @if (showModal()) {
+    @if (showModal() && selectedAction) {
       <div class="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
         <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
           <!-- Header -->
-          <h2 class="text-xl font-semibold mb-4 text-gray-800">Action Details</h2>
+          <h2 class="text-xl font-semibold mb-4 text-gray-800">
+            {{ modalTitle }}
+          </h2>
 
-          <!-- Action Info -->
-          <div class="space-y-3 text-sm text-gray-700">
-            <!-- Type -->
-            <p>
-              <span
-                class="px-2.5 py-1 rounded-full text-xs font-semibold"
-                [class]="ActionTypeColors[selectedAction!.type]"
-              >
-                {{ selectedAction?.type }}
-              </span>
-            </p>
-
-            <!-- Time -->
-            <p><strong>Time:</strong> {{ selectedAction?.createdAt }}</p>
-
-            <!-- Details -->
-            <p>
-              <strong>Details:</strong>
-            </p>
-
-            <!-- Project Info -->
-            @if (selectedActionMetadata) {
-              <div class="bg-gray-50 p-3 rounded-lg space-y-2">
-                <p>
-                  <strong>Project Name: </strong>
-                  <span class="font-medium">{{ selectedActionMetadata?.projectName }}</span>
-                </p>
-                <p>
-                  <strong>Project Description: </strong>
-                  <span>{{ selectedActionMetadata?.projectDescription }}</span>
-                </p>
-              </div>
-            }
+          <!-- Type Badge -->
+          <div class="mb-4">
+            <span
+              class="px-2.5 py-1 rounded-full text-xs font-semibold"
+              [class]="ActionTypeColors[selectedAction.type]"
+            >
+              {{ selectedAction.type }}
+            </span>
           </div>
 
-          <!-- Footer Buttons -->
+          <!-- Created Time -->
+          <p class="text-sm text-gray-500 mb-4">
+            {{ selectedAction.createdAt }}
+          </p>
+
+          <!-- Details -->
+          <p class="font-medium text-gray-800 mb-4">
+            {{ selectedAction.details }}
+          </p>
+
+          @if (selectedActionMetadata) {
+            @switch (selectedAction.type) {
+              <!-- ========================= -->
+              <!-- PROJECT INVITATION VIEW -->
+              <!-- ========================= -->
+              @case ('PROJECT_INVITATION') {
+                <div class="bg-gray-50 p-4 rounded-lg space-y-2 text-sm text-gray-700">
+                  <p>
+                    <strong>Project Name:</strong>
+                    <span class="font-medium">
+                      {{ selectedActionMetadata.projectName }}
+                    </span>
+                  </p>
+
+                  <p>
+                    <strong>Description:</strong>
+                    {{ selectedActionMetadata.projectDescription }}
+                  </p>
+                </div>
+              }
+
+              <!-- ========================= -->
+              <!-- TASK ASSIGNMENT VIEW -->
+              <!-- ========================= -->
+              @case ('TASK_ASSIGNMENT') {
+                <div class="bg-gray-50 p-4 rounded-lg space-y-2 text-sm text-gray-700">
+                  <p>
+                    <strong>Task Title:</strong>
+                    <span class="font-medium">
+                      {{ selectedActionMetadata.title }}
+                    </span>
+                  </p>
+
+                  <p>
+                    <strong>Description:</strong>
+                    {{ selectedActionMetadata.description }}
+                  </p>
+
+                  @if (selectedActionMetadata.priority) {
+                    <p>
+                      <strong>Priority:</strong>
+                      {{ selectedActionMetadata.priority }}
+                    </p>
+                  }
+
+                  @if (selectedActionMetadata.dueDate) {
+                    <p>
+                      <strong>Due Date:</strong>
+                      {{ selectedActionMetadata.dueDate }}
+                    </p>
+                  }
+                </div>
+              }
+
+              <!-- ========================= -->
+              <!-- DEFAULT / FUTURE TYPES -->
+              <!-- ========================= -->
+              @default {
+                <div class="bg-gray-50 p-4 rounded-lg text-sm text-gray-700">
+                  <p>No additional metadata available for this action type.</p>
+                </div>
+              }
+            }
+          }
+
+          <!-- Footer -->
           <div class="flex justify-end gap-3 mt-6">
             <button (click)="closeModal()" class="px-4 py-2 rounded-lg border hover:bg-gray-100">
               Close
@@ -260,6 +286,7 @@ export class ActionCenter {
   constructor(
     private actionService: ActionCenterService,
     private projectInvitationsResource: ProjectInvitationsResource,
+    private taskResource: TaskResource,
   ) {
     this.loadActions();
   }
@@ -297,38 +324,106 @@ export class ActionCenter {
     this.selectedAction = null;
   }
 
-  acceptAction(action: Action) {
-    const metadata = JSON.parse(action.metadata);
-    const invitationId = metadata.invitationId;
-
-    this.projectInvitationsResource.acceptInvitation(invitationId, action.id).subscribe({
-      next: () => {
-        this.actions.set(this.actions().filter((a) => a.id !== action.id));
-        this.successMessage.set('Invitation accepted');
-      },
-      error: () => this.errorMessage.set('Failed to accept invitation'),
-    });
-  }
-
   rejectAction(action: Action) {
-    const metadata = JSON.parse(action.metadata);
-    const invitationId = metadata.invitationId;
+    const metadata = this.safeMetadata(action);
 
-    this.projectInvitationsResource.rejectInvitation(invitationId, action.id).subscribe({
-      next: () => {
-        this.actions.set(this.actions().filter((a) => a.id !== action.id));
-        this.successMessage.set('Invitation rejected');
-      },
-      error: () => this.errorMessage.set('Failed to reject invitation'),
-    });
+    switch (action.type) {
+      case ActionType.PROJECT_INVITATION: {
+        const invitationId = metadata?.invitationId;
+        if (!invitationId) return;
+
+        this.projectInvitationsResource.rejectInvitation(invitationId, action.id).subscribe({
+          next: () => {
+            this.actions.set(this.actions().filter((a) => a.id !== action.id));
+            this.successMessage.set('Invitation rejected');
+          },
+          error: () => this.errorMessage.set('Failed to reject invitation'),
+        });
+        break;
+      }
+
+      case ActionType.TASK_ASSIGNMENT: {
+        const taskId = metadata?.taskId;
+        if (!taskId) return;
+
+        // For rejecting a task assignment, only actionId is required
+        this.taskResource.rejectTaskAssignment(taskId, action.id).subscribe({
+          next: () => {
+            this.actions.set(this.actions().filter((a) => a.id !== action.id));
+            this.successMessage.set('Task assignment rejected');
+          },
+          error: () => this.errorMessage.set('Failed to reject task assignment'),
+        });
+        break;
+      }
+
+      default: {
+        console.warn('Unhandled action type', action.type);
+        this.errorMessage.set('Cannot reject this type of action');
+        setTimeout(() => this.errorMessage.set(null), 3000);
+      }
+    }
   }
 
-  get selectedActionMetadata() {
-    if (!this.selectedAction?.metadata) return null;
+  get modalTitle(): string {
+    if (!this.selectedAction) return 'Action Details';
+
+    switch (this.selectedAction.type) {
+      case ActionType.PROJECT_INVITATION:
+        return 'Project Invitation';
+
+      case ActionType.TASK_ASSIGNMENT:
+        return 'Task Assignment';
+
+      default:
+        return 'Action Details';
+    }
+  }
+
+  acceptAction(action: Action) {
+    const metadata = this.safeMetadata(action);
+
+    switch (action.type) {
+      case ActionType.PROJECT_INVITATION: {
+        const invitationId = metadata?.invitationId;
+        if (!invitationId) return;
+
+        this.projectInvitationsResource.acceptInvitation(invitationId, action.id).subscribe({
+          next: () => {
+            this.actions.set(this.actions().filter((a) => a.id !== action.id));
+            this.successMessage.set('Invitation accepted');
+          },
+          error: () => this.errorMessage.set('Failed to accept invitation'),
+        });
+        break;
+      }
+
+      case ActionType.TASK_ASSIGNMENT: {
+        const taskId = metadata?.taskId;
+        if (!taskId) return;
+
+        this.taskResource.acceptTaskAssignment(taskId, action.id).subscribe({
+          next: () => {
+            this.actions.set(this.actions().filter((a) => a.id !== action.id));
+            this.successMessage.set('Task assignment accepted');
+          },
+          error: () => this.errorMessage.set('Failed to accept task assignment'),
+        });
+        break;
+      }
+    }
+  }
+
+  safeMetadata(action: Action): any {
+    if (!action.metadata) return null;
     try {
-      return JSON.parse(this.selectedAction.metadata);
+      return JSON.parse(action.metadata);
     } catch {
       return null;
     }
+  }
+
+  get selectedActionMetadata() {
+    return this.selectedAction ? this.safeMetadata(this.selectedAction) : null;
   }
 }

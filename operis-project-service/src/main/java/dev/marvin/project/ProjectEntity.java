@@ -44,11 +44,6 @@ public class ProjectEntity {
     @Column(name = "member_id", nullable = false)
     private List<UUID> memberIds = new ArrayList<>();
 
-    @Builder.Default
-    private Integer totalTasks = 0;
-
-    @Builder.Default
-    private Integer completedTasks = 0;
 
     @Builder.Default
     private Boolean archived = false;
@@ -69,9 +64,4 @@ public class ProjectEntity {
     @Column(insertable = false)
     private UUID updatedBy;
 
-    @Transient
-    public Integer getProgressPercentage() {
-        if (totalTasks == 0 || completedTasks == 0) return 0;
-        return (int) Math.round(((double) completedTasks / totalTasks) * 100);
-    }
 }

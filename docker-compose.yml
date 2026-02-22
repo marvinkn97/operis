@@ -8,6 +8,8 @@ volumes:
   postgres-project-data:
   postgres-user-data:
   postgres-cta-data:
+  postgres-task-data:
+  postgres-subscription-data:
   pgadmin-data:
   maildev-data:
   rabbitmq-data:
@@ -112,6 +114,37 @@ services:
     networks:
       - operis-network
     restart: unless-stopped
+
+  postgres-operis-task:
+    container_name: postgres-operis-task
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: operis_task_db
+    volumes:
+      - postgres-task-data:/var/lib/postgresql/data
+    ports:
+      - "54324:5432"
+    networks:
+      - operis-network
+    restart: unless-stopped
+
+  postgres-operis-subscription:
+    container_name: postgres-operis-subscription
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: operis_subscription_db
+    volumes:
+      - postgres-subscription-data:/var/lib/postgresql/data
+    ports:
+      - "54325:5432"
+    networks:
+      - operis-network
+    restart: unless-stopped
+
 
   maildev:
     container_name: operis-maildev

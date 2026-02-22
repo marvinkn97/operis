@@ -61,10 +61,10 @@ logging:
 rabbitmq:
   exchange:
     name: project.invitation.exchange
+  queue:
+    notification-service: project.invitation.notification.queue
+    cta-service: project.invitation.cta.queue
   routing:
     new: project.invite
     accept: project.invitation.accept
     reject: project.invitation.reject
-  queue:
-    notification-service: project.invitation.notification.queue
-    cta-service: project.invitation.cta.queue

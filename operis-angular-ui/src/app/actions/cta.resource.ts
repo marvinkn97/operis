@@ -54,7 +54,7 @@ export class ActionCenterService {
       case ActionType.PROJECT_INVITATION:
         return `You were invited to project "${metadata.projectName}"`;
       case ActionType.TASK_ASSIGNMENT:
-        return `You were assigned a task by ${metadata.assignedBy}`;
+        return `You were assigned a ${metadata.priority || ''} priority task`;
       default:
         return 'You have a new action';
     }

@@ -46,6 +46,17 @@ spring:
                   args:
                     name: ctaServiceCB
                     fallbackUri: forward:/fallback
+            - id: operis-task-service
+              uri: lb://operis-task-service
+              predicates:
+                - name: Path
+                  args:
+                    pattern: /api/v1/tasks/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: taskServiceCB
+                    fallbackUri: forward:/fallback
           default-filters:
             - name: Retry
               args:
@@ -157,6 +168,8 @@ resilience4j:
       userServiceCB:
         base-config: default
       ctaServiceCB:
+        base-config: default
+      taskServiceCB:
         base-config: default
 
 

@@ -7,14 +7,9 @@ import { Project } from '../project.model';
 import { UsersResource } from '../../users/users.resource';
 import { User } from '../../users/user.model';
 import { ProjectInvitationsResource } from '../project-invitations.resource';
-
-type Task = {
-  id: string;
-  title: string;
-  description: string;
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
-  assignees: User[];
-};
+import { TaskResource } from '../../tasks/task.resource';
+import { Task, TaskPriority, TaskRequest } from '../../tasks/task.model';
+import { Action } from '../../actions/action-center/action.model';
 
 @Component({
   selector: 'app-project-details-page',
@@ -32,177 +27,252 @@ type Task = {
         </a>
       </div>
 
-      <!-- Project header -->
-      <section class="bg-white rounded-xl shadow-sm p-6">
-        <h1 class="text-3xl font-bold">{{ project()?.name }}</h1>
-        <p class="text-gray-600 mt-2">{{ project()?.description }}</p>
-
-        <div class="mt-4">
-          <div class="w-full bg-gray-200 rounded-full h-4">
-            <div
-              class="bg-blue-600 h-4 rounded-full transition-all"
-              [style.width.%]="project()?.progressPercentage || 0"
-            ></div>
+      <!-- 🔄 LOADING SKELETON -->
+      @if (loading()) {
+        <div class="space-y-6 animate-pulse">
+          <!-- Header skeleton -->
+          <div class="bg-white rounded-xl shadow-sm p-6 space-y-4">
+            <div class="h-8 w-1/3 bg-gray-200 rounded"></div>
+            <div class="h-4 w-2/3 bg-gray-200 rounded"></div>
+            <div class="h-4 w-full bg-gray-200 rounded"></div>
           </div>
-          <p class="text-sm text-gray-500 mt-1">
-            Progress: {{ project()?.progressPercentage || 0 }}%
-          </p>
-        </div>
 
-        <!-- Project actions -->
-        <div class="mt-4 flex gap-3">
-          @if (project()?.status !== 'COMPLETED') {
-            <button
-              (click)="markProjectCompleted()"
-              class="px-4 py-2 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700"
-            >
-              ✓ Mark as Completed
-            </button>
-          }
-          @if (project()?.status === 'COMPLETED') {
-            <span class="text-sm px-3 py-1 rounded-full bg-green-100 text-green-800">
-              Completed
-            </span>
-          }
-        </div>
-      </section>
+          <!-- Members skeleton -->
+          <div class="bg-white rounded-xl shadow-sm p-6 space-y-3">
+            <div class="h-6 w-40 bg-gray-200 rounded"></div>
+            <div class="h-12 bg-gray-200 rounded"></div>
+            <div class="h-12 bg-gray-200 rounded"></div>
+          </div>
 
-      <!-- Members + Tasks -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Members -->
-        <section class="bg-gray-50 rounded-lg p-4">
-          <div class="flex justify-between items-center mb-2">
-            <h2 class="text-base font-semibold text-gray-800 flex items-center gap-1">
-              Team Members ({{ project()?.memberCount }})
-            </h2>
-            <div class="flex items-center gap-2">
-              <button
-                (click)="toggleMembers()"
-                class="text-gray-500 hover:text-gray-900"
-                aria-label="Toggle members"
-              >
-                <svg
-                  [class.rotate-90]="membersExpanded()"
-                  class="w-4 h-4 transition-transform"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 5l7 7-7 7"
-                  ></path>
-                </svg>
-              </button>
-              <button
-                (click)="showInviteMember.set(true)"
-                class="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                + Invite
-              </button>
+          <!-- Tasks skeleton -->
+          <div class="bg-white rounded-xl shadow-sm p-6 space-y-4">
+            <div class="h-6 w-32 bg-gray-200 rounded"></div>
+            <div class="h-16 bg-gray-200 rounded"></div>
+            <div class="h-16 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      }
+
+      @if (!loading()) {
+        <!-- Project header -->
+        <section class="bg-white rounded-xl shadow-sm p-6">
+          <h1 class="text-3xl font-bold">{{ project()?.name }}</h1>
+          <p class="text-gray-600 mt-2">{{ project()?.description }}</p>
+
+          <div class="mt-4">
+            <div class="w-full bg-gray-200 rounded-full h-4">
+              <div
+                class="bg-blue-600 h-4 rounded-full transition-all"
+                [style.width.%]="project()?.progressPercentage || 0"
+              ></div>
             </div>
+            <p class="text-sm text-gray-500 mt-1">
+              Progress: {{ project()?.progressPercentage || 0 }}%
+            </p>
           </div>
 
-          <!-- Loading -->
-          @if (loadingMembers()) {
-            <p class="text-xs text-gray-500 mt-1">Loading members...</p>
-          }
-
-          <!-- Member list -->
-          @if (membersExpanded()) {
-            <ul class="space-y-1 mt-2">
-              @for (member of members(); track member.id) {
-                <li class="flex justify-between items-center bg-white border rounded p-2 text-sm">
-                  <div class="flex items-center gap-2">
-                    <div
-                      class="w-6 h-6 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-medium"
-                    >
-                      {{ member.firstName.charAt(0) }}{{ member.lastName.charAt(0) }}
-                    </div>
-                    <div class="text-gray-700">
-                      <p class="font-medium">{{ member.firstName }} {{ member.lastName }}</p>
-                      <p class="text-xs text-gray-500">{{ member.email }}</p>
-                    </div>
-
-                    @if (member.id === ownerId()) {
-                      <span class="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded ml-2"
-                        >Owner</span
-                      >
-                    }
-                  </div>
-
-                  @if (member.id !== ownerId()) {
-                    <button
-                      class="text-red-600 text-xs hover:underline"
-                      (click)="removeMember(member.id)"
-                    >
-                      Remove
-                    </button>
-                  }
-                </li>
-              }
-            </ul>
-
-            <!-- Load more -->
-            @if (membersHasMore() && !loadingMembers()) {
+          <!-- Project actions -->
+          <div class="mt-4 flex gap-3">
+            @if (project()?.status !== 'COMPLETED') {
               <button
-                (click)="fetchMembers(membersPage())"
-                class="text-sm text-blue-600 hover:underline mt-2"
+                (click)="markProjectCompleted()"
+                class="text-sm px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                Load more
+                ✓ Mark as Completed
               </button>
             }
-          }
-        </section>
-
-        <!-- Tasks -->
-        <section class="bg-white rounded-xl shadow-sm p-6 lg:col-span-2">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Tasks</h2>
-            <button
-              (click)="showAddTask.set(true)"
-              class="text-sm px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              + Add Task
-            </button>
-          </div>
-
-          @if (tasks().length === 0) {
-            <p class="text-sm text-gray-500">No tasks created yet.</p>
-          }
-
-          <div class="space-y-4">
-            @for (task of tasks(); track task.id) {
-              <div class="border rounded-xl p-4 hover:shadow-sm transition">
-                <div class="flex justify-between items-start gap-4">
-                  <div>
-                    <h3 class="font-semibold">{{ task.title }}</h3>
-                    <p class="text-sm text-gray-600 mt-1">{{ task.description }}</p>
-                  </div>
-
-                  <span
-                    class="text-xs px-3 py-1 rounded-full font-medium"
-                    [ngClass]="statusClass(task.status)"
-                  >
-                    {{ task.status }}
-                  </span>
-                </div>
-
-                <div class="flex gap-2 mt-3 flex-wrap">
-                  @for (user of task.assignees; track user.id) {
-                    <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">{{
-                      user.firstName
-                    }}</span>
-                  }
-                </div>
-              </div>
+            @if (project()?.status === 'COMPLETED') {
+              <span class="text-sm px-3 py-1 rounded-full bg-green-100 text-green-800">
+                Completed
+              </span>
             }
           </div>
         </section>
-      </div>
+
+        <!-- Members + Tasks -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Members -->
+          <section class="bg-white rounded-xl shadow-sm p-6 lg:col-span-full">
+            <div class="flex justify-between items-center mb-2">
+              <h2 class="text-base font-semibold text-gray-800 flex items-center gap-1">
+                Team Members ({{ project()?.memberCount }})
+              </h2>
+              <div class="flex items-center gap-2">
+                <button
+                  (click)="toggleMembers()"
+                  class="text-gray-500 hover:text-gray-900"
+                  aria-label="Toggle members"
+                >
+                  <svg
+                    [class.rotate-90]="membersExpanded()"
+                    class="w-4 h-4 transition-transform"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 5l7 7-7 7"
+                    ></path>
+                  </svg>
+                </button>
+                <button
+                  (click)="showInviteMember.set(true)"
+                  class="text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  + Invite
+                </button>
+              </div>
+            </div>
+
+            <!-- Loading -->
+            @if (loadingMembers()) {
+              <p class="text-xs text-gray-500 mt-1">Loading members...</p>
+            }
+
+            <!-- Member list -->
+            @if (membersExpanded()) {
+              <ul class="space-y-4 mt-2">
+                @for (member of members(); track member.id) {
+                  <li
+                    class="flex justify-between items-center bg-white border rounded-xl p-2 text-sm"
+                  >
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-6 h-6 rounded-full bg-gray-800 text-white flex items-center justify-center text-sm font-medium"
+                      >
+                        {{ member.firstName.charAt(0) }}{{ member.lastName.charAt(0) }}
+                      </div>
+                      <div class="text-gray-700">
+                        <p class="font-semibold">{{ member.firstName }} {{ member.lastName }}</p>
+                        <p class="text-sm text-gray-500">{{ member.email }}</p>
+                      </div>
+
+                      @if (member.id === ownerId()) {
+                        <span class="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded ml-2"
+                          >Owner</span
+                        >
+                      }
+                    </div>
+
+                    @if (member.id !== ownerId()) {
+                      <button
+                        class="text-red-600 text-xs hover:underline"
+                        (click)="removeMember(member.id)"
+                      >
+                        Remove
+                      </button>
+                    }
+                  </li>
+                }
+              </ul>
+
+              <!-- Load more -->
+              @if (membersHasMore() && !loadingMembers()) {
+                <button
+                  (click)="fetchMembers(membersPage())"
+                  class="text-sm text-blue-600 hover:underline mt-2"
+                >
+                  Load more
+                </button>
+              }
+            }
+          </section>
+
+          <!-- Tasks -->
+          <section class="bg-white rounded-xl shadow-sm p-6 lg:col-span-full">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-base font-semibold">Tasks ({{ project()?.taskCount }})</h2>
+
+              <div class="flex items-center gap-2">
+                <!-- Toggle button (same UX as members) -->
+                <button
+                  (click)="toggleTasks()"
+                  class="text-gray-500 hover:text-gray-900"
+                  aria-label="Toggle tasks"
+                >
+                  <svg
+                    [class.rotate-90]="tasksExpanded()"
+                    class="w-4 h-4 transition-transform"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 5l7 7-7 7"
+                    ></path>
+                  </svg>
+                </button>
+
+                <button
+                  (click)="openTaskModal()"
+                  class="text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  + Add
+                </button>
+              </div>
+            </div>
+
+            @if (loadingTasks()) {
+              <p class="text-sm text-gray-500">Loading tasks...</p>
+            }
+
+            @if (tasksExpanded()) {
+              @if (tasks().length === 0 && !loadingTasks()) {
+                <p class="text-sm text-gray-500">No tasks created yet.</p>
+              }
+
+              <div class="space-y-4">
+                @for (task of tasks(); track task.id) {
+                  <div class="border rounded-xl p-4 hover:shadow-sm transition">
+                    <div class="flex justify-between items-start gap-4">
+                      <div>
+                        <h3 class="text-sm font-semibold">{{ task.title }}</h3>
+                        <p class="text-sm text-gray-600 mt-1">
+                          {{ task.description }}
+                        </p>
+                        <!-- 🔹 Assigned badge -->
+                        <span
+                          class="inline-block text-xs px-2 py-0.5 rounded-full mt-1 font-semibold"
+                          [class]="
+                            task.isAssigned
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          "
+                        >
+                          {{ task.isAssigned ? 'Assigned' : 'Not Assigned' }}
+                        </span>
+                      </div>
+
+                      <span
+                        class="text-xs px-3 py-1 rounded-full font-medium"
+                        [ngClass]="statusClass(task.status)"
+                      >
+                        {{ task.status }}
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              @if (tasksHasMore() && !loadingTasks()) {
+                <button
+                  (click)="fetchTasks(tasksPage())"
+                  class="text-sm text-blue-600 hover:underline mt-2"
+                >
+                  Load more
+                </button>
+              }
+            }
+          </section>
+        </div>
+      }
 
       <!-- Invite Member Modal -->
       @if (showInviteMember()) {
@@ -231,7 +301,7 @@ type Task = {
               </button>
               <button
                 (click)="inviteMember()"
-                class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                class="px-4 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
               >
                 Send Invite
               </button>
@@ -245,12 +315,16 @@ type Task = {
         <div class="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div class="bg-white p-6 rounded-xl shadow-xl w-md">
             <h2 class="text-xl font-semibold mb-4">Create Task</h2>
+
             <div class="flex flex-col gap-4">
+              <!-- Title -->
               <input
                 [(ngModel)]="newTask.title"
                 placeholder="Task title"
                 class="border rounded-lg p-2"
               />
+
+              <!-- Description -->
               <textarea
                 [(ngModel)]="newTask.description"
                 placeholder="Task description"
@@ -258,16 +332,38 @@ type Task = {
                 class="border rounded-lg p-2"
               ></textarea>
 
+              <!-- Priority Dropdown -->
               <div>
-                <p class="text-sm font-medium mb-2">Assign Members</p>
-                <div class="flex flex-wrap gap-3">
-                  @for (member of members(); track member.id) {
-                    <label class="flex items-center gap-2 text-sm">
-                      <input type="checkbox" (change)="toggleAssignee(member)" />
-                      {{ member.firstName }}
-                    </label>
+                <label class="text-sm font-medium mb-1 block">Priority</label>
+                <select [(ngModel)]="newTask.priority" class="border rounded-lg p-2 w-full">
+                  <option value="" disabled>Select priority</option>
+                  <option value="LOW">LOW</option>
+                  <option value="MEDIUM">MEDIUM</option>
+                  <option value="HIGH">HIGH</option>
+                </select>
+              </div>
+
+              <!-- Due Date -->
+              <div>
+                <label class="text-sm font-medium mb-1 block">Due Date</label>
+                <input
+                  type="date"
+                  [(ngModel)]="newTask.dueDate"
+                  class="border rounded-lg p-2 w-full"
+                />
+              </div>
+
+              <!-- Single Assignee Dropdown -->
+              <div>
+                <label class="text-sm font-medium mb-1 block">Assign Member</label>
+                <select [(ngModel)]="newTask.assigneeId" class="border rounded-lg p-2 w-full">
+                  <option [ngValue]="null" disabled>Select a member</option>
+                  @for (member of taskAssignees(); track member.id) {
+                    <option [ngValue]="member.id">
+                      {{ member.firstName }} {{ member.lastName }}
+                    </option>
                   }
-                </div>
+                </select>
               </div>
             </div>
 
@@ -280,7 +376,7 @@ type Task = {
               </button>
               <button
                 (click)="createTask()"
-                class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
+                class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
               >
                 Create
               </button>
@@ -308,6 +404,7 @@ export class ProjectPage implements OnInit {
     private projectResource: ProjectResource,
     private userResource: UsersResource,
     private invitationResource: ProjectInvitationsResource,
+    private taskResource: TaskResource,
   ) {}
 
   project = signal<Project | null>(null);
@@ -323,22 +420,27 @@ export class ProjectPage implements OnInit {
   membersPageSize = 10;
   membersHasMore = signal(true);
 
-  // Tasks
-  tasks = signal<Task[]>([]);
-
   // Invite & Add Task
   showInviteMember = signal(false);
   inviteForm = { name: '', email: '' };
-  showAddTask = signal(false);
-  newTask = { title: '', description: '', assignees: [] as User[] };
 
   ngOnInit() {
     const projectId = this.route.snapshot.paramMap.get('id');
-    if (!projectId) return;
+
+    if (!projectId) {
+      this.loading.set(false);
+      return;
+    }
+
+    this.loading.set(true); // start loader
 
     this.projectResource.getProjectById(projectId).subscribe({
-      next: (project) => this.project.set(project),
+      next: (project) => {
+        this.project.set(project);
+        this.loading.set(false); // stop loader
+      },
       error: (err) => {
+        this.loading.set(false); // stop loader even on error
         this.errorMessage.set('Failed to load project');
         console.error('Failed to load project', err);
         setTimeout(() => this.errorMessage.set(null), 3000);
@@ -401,7 +503,7 @@ export class ProjectPage implements OnInit {
     return {
       TODO: 'bg-gray-200 text-gray-700',
       IN_PROGRESS: 'bg-yellow-200 text-yellow-800',
-      DONE: 'bg-green-200 text-green-800',
+      COMPLETED: 'bg-green-100 text-green-800', // ✅ completed is green
     }[status];
   }
 
@@ -411,22 +513,8 @@ export class ProjectPage implements OnInit {
     this.inviteForm = { name: '', email: '' };
   }
 
-  toggleAssignee(member: User) {
-    const exists = this.newTask.assignees.find((a) => a.id === member.id);
-    this.newTask.assignees = exists
-      ? this.newTask.assignees.filter((a) => a.id !== member.id)
-      : [...this.newTask.assignees, member];
-  }
-
   closeTaskModal() {
     this.showAddTask.set(false);
-    this.newTask = { title: '', description: '', assignees: [] };
-  }
-
-  createTask() {
-    if (!this.newTask.title) return;
-    this.tasks.update((t) => [...t, { id: crypto.randomUUID(), ...this.newTask, status: 'TODO' }]);
-    this.closeTaskModal();
   }
 
   markProjectCompleted() {
@@ -500,6 +588,156 @@ export class ProjectPage implements OnInit {
         // ❌ Error toast
         this.errorMessage.set(err?.error?.detail || 'Failed to remove member');
         setTimeout(() => this.errorMessage.set(null), 3000);
+      },
+    });
+  }
+
+  newTask = {
+    title: '',
+    description: '',
+    priority: '',
+    dueDate: '',
+    assigneeId: null,
+  };
+
+  taskAssignees = signal<User[]>([]);
+  showAddTask = signal(false);
+
+  openTaskModal() {
+    this.showAddTask.set(true);
+    this.loadTaskAssignees();
+  }
+
+  loadTaskAssignees() {
+    const projectData = this.project();
+    if (!projectData) return;
+
+    // If already loaded, skip
+    if (this.taskAssignees().length > 0) return;
+
+    const memberIds = projectData.memberIds || [];
+    if (memberIds.length === 0) return;
+
+    this.userResource.getUsersByIds(memberIds).subscribe({
+      next: (data) => {
+        const items = data?._embedded?.userResponseList ?? [];
+        this.taskAssignees.set(items);
+      },
+      error: (err) => {
+        console.error('Failed to load members for task dropdown', err);
+        this.errorMessage.set('Failed to load members');
+        setTimeout(() => this.errorMessage.set(null), 3000);
+      },
+    });
+  }
+
+  createTask() {
+    const projectId = this.project()?.id;
+
+    if (!projectId || !this.newTask.assigneeId || !this.newTask.title || !this.newTask.priority) {
+      this.errorMessage.set('Please fill all required fields');
+      setTimeout(() => this.errorMessage.set(null), 3000);
+      return;
+    }
+
+    const taskRequest: TaskRequest = {
+      title: this.newTask.title,
+      description: this.newTask.description,
+      priority: this.newTask.priority as TaskPriority,
+      dueDate: this.newTask.dueDate || undefined,
+      assignedTo: this.newTask.assigneeId,
+      projectId,
+    };
+
+    this.taskResource.createTask(taskRequest).subscribe({
+      next: () => {
+        this.newTask = {
+          title: '',
+          description: '',
+          priority: '',
+          dueDate: '',
+          assigneeId: null,
+        };
+
+        this.showAddTask.set(false);
+
+        const projectId = this.project()?.id;
+        if (projectId) {
+          this.loadProjectTasks(projectId);
+        }
+
+        this.successMessage.set('Task created successfully');
+        setTimeout(() => this.successMessage.set(null), 3000);
+      },
+      error: (err) => {
+        console.error('Failed to create task', err);
+        this.errorMessage.set(err?.error?.detail || 'Failed to create task');
+        setTimeout(() => this.errorMessage.set(null), 3000);
+      },
+    });
+  }
+
+  loading = signal(true);
+
+  loadProjectTasks(projectId: string) {
+    this.taskResource.getTasksByProject(projectId).subscribe({
+      next: (response) => {
+        const items = response?._embedded?.taskResponseList ?? [];
+        this.tasks.set(items);
+      },
+      error: (err) => {
+        console.error('Failed to load tasks', err);
+        this.errorMessage.set('Failed to load tasks');
+        setTimeout(() => this.errorMessage.set(null), 3000);
+      },
+    });
+  }
+
+  // Tasks
+  tasks = signal<Task[]>([]);
+  tasksExpanded = signal(false);
+  loadingTasks = signal(false);
+  tasksPage = signal(0);
+  tasksPageSize = 10;
+  tasksHasMore = signal(true);
+
+  toggleTasks() {
+    const projectData = this.project();
+    if (!projectData) return;
+
+    this.tasksExpanded.update((v) => !v);
+
+    // Lazy load ONLY first time opened
+    if (this.tasksExpanded() && this.tasks().length === 0) {
+      this.tasksPage.set(0);
+      this.tasksHasMore.set(true);
+      this.tasks.set([]);
+      this.fetchTasks(0);
+    }
+  }
+
+  fetchTasks(page: number) {
+    const projectData = this.project();
+    if (!projectData) return;
+
+    this.loadingTasks.set(true);
+
+    this.taskResource.getTasksByProject(projectData.id, page, this.tasksPageSize).subscribe({
+      next: (data) => {
+        const items = data?._embedded?.taskResponseList ?? [];
+
+        this.tasks.update((prev) => [...prev, ...items]);
+
+        const totalElements = data.page?.totalElements ?? 0;
+        this.tasksHasMore.set(this.tasks().length < totalElements);
+        this.tasksPage.set(page + 1);
+        this.loadingTasks.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load tasks', err);
+        this.errorMessage.set('Failed to load tasks');
+        setTimeout(() => this.errorMessage.set(null), 3000);
+        this.loadingTasks.set(false);
       },
     });
   }

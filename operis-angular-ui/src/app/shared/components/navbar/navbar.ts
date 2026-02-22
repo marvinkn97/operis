@@ -16,6 +16,9 @@ import { RouterModule } from '@angular/router';
         <a routerLink="/projects" class="text-gray-700 hover:text-blue-700 font-medium">
           Projects
         </a>
+         <a routerLink="/tasks" class="text-gray-700 hover:text-blue-700 font-medium">
+          Tasks
+        </a>
         <a routerLink="/action-center" class="text-gray-700 hover:text-blue-700 font-medium">
           Action Center
         </a>

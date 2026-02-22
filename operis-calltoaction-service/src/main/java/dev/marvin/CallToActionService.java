@@ -1,7 +1,9 @@
 package dev.marvin;
 
+import dev.marvin.configuration.NewTaskEvent;
 import dev.marvin.configuration.ProjectInvitationEvent;
 import dev.marvin.configuration.ProjectInvitationResolveEvent;
+import dev.marvin.configuration.TaskAssignmentResolveEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -22,7 +24,7 @@ public class CallToActionService {
     private final CallToActionRepository callToActionRepository;
     private final ObjectMapper objectMapper;
 
-    @RabbitListener(queues = "${rabbitmq.queue.cta-service}")
+    @RabbitListener(queues = "${rabbitmq.queue.invitation-cta-service}")
     @Transactional
     public void projectInvitation(ProjectInvitationEvent projectInvitationEvent) {
         if (callToActionRepository.findByReferenceId(projectInvitationEvent.invitationId()).isPresent()) {
@@ -51,7 +53,8 @@ public class CallToActionService {
                 .map(action -> new CallToActionResponse(action.getId(), action.getType(), action.getMetadata(), action.getCreatedAt()));
     }
 
-    @RabbitListener(queues = "${rabbitmq.queue.cta-service}")
+    @RabbitListener(queues = "${rabbitmq.queue.invitation-cta-service}")
+    @Transactional
     public void resolveCTA(ProjectInvitationResolveEvent resolveEvent) {
         callToActionRepository.findById(resolveEvent.ctaId()).ifPresentOrElse(
                 callToActionEntity -> {
@@ -59,6 +62,38 @@ public class CallToActionService {
                     callToActionRepository.save(callToActionEntity);
                 }, () -> {
                     throw new ResourceNotFoundException("CTA with given id [%s] not found".formatted(resolveEvent.ctaId()));
+                }
+        );
+    }
+
+    @RabbitListener(queues = "${rabbitmq.queue.task-cta-service}")
+    @Transactional
+    public void taskAssignment(NewTaskEvent event) {
+        if (callToActionRepository.findByReferenceIdAndTargetId(event.taskId(), event.assignedTo()).isPresent()) {
+            return;
+        }
+
+        CallToActionEntity callToActionEntity = CallToActionEntity.builder()
+                .type(CallToActionType.TASK_ASSIGNMENT)
+                .status(CallToActionStatus.PENDING)
+                .target(CallToActionTarget.USER)
+                .targetId(event.assignedTo())
+                .referenceId(event.taskId())
+                .metadata(objectMapper.writeValueAsString(event))
+                .build();
+        callToActionRepository.save(callToActionEntity);
+    }
+
+
+    @RabbitListener(queues = "${rabbitmq.queue.task-cta-service}")
+    @Transactional
+    public void resolveCTA(TaskAssignmentResolveEvent event) {
+        callToActionRepository.findById(event.actionId()).ifPresentOrElse(
+                callToActionEntity -> {
+                    callToActionEntity.setStatus(CallToActionStatus.COMPLETED);
+                    callToActionRepository.save(callToActionEntity);
+                }, () -> {
+                    throw new ResourceNotFoundException("CTA with given id [%s] not found".formatted(event.actionId()));
                 }
         );
     }

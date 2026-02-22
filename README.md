@@ -16,39 +16,6 @@ from the features necessary for their needs while having the possibility to upgr
 advanced features according to their requirements and budget.
 ---
 
-#### 6. Task Management
-
-Tasks contain:
-- **Status**
-- **History**
-
-##### Task Statuses
-- `To Do`
-- `In Progress`
-- `Completed`
-
-##### History Tracking
-- Captures the entire lifecycle of a task:
-    - Creation timestamp.
-    - All status changes and modifications.
-    - Allows precise chronological tracking of task evolution.
-
-##### Available Actions
-- Add, modify, and delete tasks.
-- Update task state.
-- Track task statuses across projects.
-
----
-
-#### 7. Project Retrieval
-
-- Retrieve a full project view including:
-    - Project details.
-    - Members.
-    - All associated tasks and their current states.
-
----
-
 ## Paid Features
 
 ### 1. CSV Export of Project Tasks

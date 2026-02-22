@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.UUID;
 @Slf4j
 public class ProjectService {
     private final ProjectRepository projectRepository;
+    private final WebClient webClient;
 
     private static final String PROJECT_NOT_FOUND = "Project with given id [%s] not found";
 
@@ -77,8 +79,22 @@ public class ProjectService {
         UUID ownerId = UUID.fromString(authentication.getName());
         List<ProjectResponse> projectEntities = projectRepository.findAllWithMembers(ownerId, false).stream()
                 .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt())) // latest first
-                .map(projectEntity ->
-                        new ProjectResponse(projectEntity.getId(), projectEntity.getName(), projectEntity.getDescription(), projectEntity.getStatus().getValue(), projectEntity.getProgressPercentage(), projectEntity.getTotalTasks(), projectEntity.getMemberIds().size()))
+                .map(projectEntity -> {
+
+                    // 🔥 NEW: Ask Task Service (source of truth)
+                    TaskStatsResponse taskStatsResponse = getTaskStats(projectEntity.getId());
+
+
+                    assert taskStatsResponse != null;
+                    return new ProjectResponse(
+                            projectEntity.getId(),
+                            projectEntity.getName(),
+                            projectEntity.getDescription(),
+                            projectEntity.getStatus().getValue(),
+                            getProgressPercentage(taskStatsResponse.total(), taskStatsResponse.completed()),
+                            taskStatsResponse.total(),
+                            projectEntity.getMemberIds().size());
+                })
                 .toList();
 
         int start = (int) pageable.getOffset();
@@ -93,7 +109,22 @@ public class ProjectService {
     public ProjectResponse getProject(UUID projectId) {
         log.info("Retrieving project with id {}", projectId);
         return projectRepository.findByIdWithMembers(projectId)
-                .map(projectEntity -> new ProjectResponse(projectEntity.getId(), projectEntity.getName(), projectEntity.getDescription(), projectEntity.getStatus().getValue(), projectEntity.getOwnerId(), projectEntity.getProgressPercentage(), projectEntity.getTotalTasks(), projectEntity.getMemberIds().size(), projectEntity.getMemberIds()))
+                .map(projectEntity -> {
+                    // 🔥 NEW: Ask Task Service (source of truth)
+                    TaskStatsResponse taskStatsResponse = getTaskStats(projectEntity.getId());
+
+                    assert taskStatsResponse != null;
+                    return  new ProjectResponse(
+                            projectEntity.getId(),
+                            projectEntity.getName(),
+                            projectEntity.getDescription(),
+                            projectEntity.getStatus().getValue(),
+                            projectEntity.getOwnerId(),
+                            getProgressPercentage(taskStatsResponse.total(), taskStatsResponse.completed()),
+                            taskStatsResponse.total(),
+                            projectEntity.getMemberIds().size(),
+                            projectEntity.getMemberIds());
+                })
                 .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND.formatted(projectId)));
     }
 
@@ -109,22 +140,18 @@ public class ProjectService {
             throw new BadRequestException("Only the project owner can archive this project");
         }
 
-        if (projectEntity.getTotalTasks() > projectEntity.getCompletedTasks()) {
-            throw new BadRequestException("Project cannot be deleted: there are unfinished tasks");
-        }
-
         projectEntity.setArchived(true);
         projectRepository.save(projectEntity);
         log.info("Project {} archived", projectEntity.getId());
     }
 
     @Transactional
-    public void closeProject(UUID projectId, Authentication authentication){
+    public void closeProject(UUID projectId, Authentication authentication) {
         log.info("Closing project {}", projectId);
         ProjectEntity projectEntity = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND.formatted(projectId)));
 
-        if(projectEntity.getStatus().equals(ProjectStatus.COMPLETED)){
+        if (projectEntity.getStatus().equals(ProjectStatus.COMPLETED)) {
             log.info("Project already marked as completed");
             return;
         }
@@ -135,8 +162,12 @@ public class ProjectService {
             throw new BadRequestException("Only the project owner can close this project");
         }
 
-        int total = projectEntity.getTotalTasks();
-        int completed = projectEntity.getCompletedTasks();
+        // 🔥 NEW: Ask Task Service (source of truth)
+        TaskStatsResponse taskStatsResponse = getTaskStats(projectEntity.getId());
+
+        assert taskStatsResponse != null;
+        int total = taskStatsResponse.total();
+        int completed = taskStatsResponse.completed();
 
         log.info("Close check → totalTasks={}, completedTasks={}", total, completed);
 
@@ -153,6 +184,7 @@ public class ProjectService {
         log.info("Project {} closed", projectEntity.getId());
     }
 
+    @Transactional
     public void removeMember(UUID projectId, UUID memberId, Authentication authentication) {
         log.info("Removing member {} from project {}", memberId, projectId);
         ProjectEntity project = projectRepository.findByIdAndArchived(projectId, false)
@@ -172,5 +204,16 @@ public class ProjectService {
         projectRepository.save(project);
     }
 
+    private Integer getProgressPercentage(int total, int completed) {
+        if (total == 0 || completed == 0) return 0;
+        return (int) Math.round(((double) completed / total) * 100);
+    }
 
+    private TaskStatsResponse getTaskStats(UUID projectId) {
+        return webClient.get()
+                .uri("http://operis-task-service/api/v1/tasks/{projectId}/stats", projectId)
+                .retrieve()
+                .bodyToMono(TaskStatsResponse.class)
+                .block();
+    }
 }

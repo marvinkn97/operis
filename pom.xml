@@ -30,6 +30,7 @@
         <module>operis-task-service</module>
         <module>operis-calltoaction-service</module>
         <module>operis-notification-service</module>
+        <module>operis-subscription-service</module>
     </modules>
 
     <dependencyManagement>

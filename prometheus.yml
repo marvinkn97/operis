@@ -18,3 +18,11 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: [ "172.17.0.1:9094" ]
+  - job_name: operis-task-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [ "172.17.0.1:9095" ]
+  - job_name: operis-subscription-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [ "172.17.0.1:9096" ]

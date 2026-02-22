@@ -34,15 +34,9 @@ spring:
         format_sql: true
 
 rabbitmq:
-  exchange:
-    name: project.invitation.exchange
-  routing:
-    new: project.invite
-    accept: project.invite.accept
-    reject: project.invite.reject
   queue:
-    cta-service: project.invitation.cta.queue
-
+    invitation-cta-service: project.invitation.cta.queue
+    task-cta-service: task.cta.queue
 management:
   server:
     port: 9094

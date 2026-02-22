@@ -14,6 +14,8 @@ import java.util.UUID;
 public interface CallToActionRepository extends JpaRepository<CallToActionEntity, UUID> {
     Optional<CallToActionEntity> findByReferenceId(UUID referenceId);
 
+    Optional<CallToActionEntity> findByReferenceIdAndTargetId(UUID referenceId, UUID targetId);
+
     @Query("""
                 SELECT c FROM CallToActionEntity c
                 WHERE c.status = :status
