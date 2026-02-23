@@ -10,5 +10,9 @@ import java.util.UUID;
 public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity, UUID> {
     Optional<SubscriptionEntity> findByUserIdAndActive(UUID userId, Boolean active);
 
+    Optional<SubscriptionEntity> findByUserId(UUID userId);
+
     boolean existsByUserIdAndActive(UUID userId, Boolean active);
+
+    Optional<SubscriptionEntity> findByStripeCheckoutSessionId(String stripeCheckoutSessionId);
 }

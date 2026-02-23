@@ -26,7 +26,6 @@
         <module>operis-apigateway</module>
         <module>operis-servicediscovery</module>
         <module>operis-configserver</module>
-        <module>operis-feignclients</module>
         <module>operis-task-service</module>
         <module>operis-calltoaction-service</module>
         <module>operis-notification-service</module>

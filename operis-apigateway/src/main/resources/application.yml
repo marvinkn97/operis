@@ -57,6 +57,17 @@ spring:
                   args:
                     name: taskServiceCB
                     fallbackUri: forward:/fallback
+            - id: operis-subscription-service
+              uri: lb://operis-subscription-service
+              predicates:
+                - name: Path
+                  args:
+                    pattern: /api/v1/subscriptions/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: subscriptionServiceCB
+                    fallbackUri: forward:/fallback
           default-filters:
             - name: Retry
               args:
@@ -73,7 +84,7 @@ spring:
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@ipKeyResolver}"
           httpclient:
-            connect-timeout: 1000
+            connect-timeout: 10000
             response-timeout: 5s
   security:
     oauth2:
@@ -151,6 +162,13 @@ logging:
       max-history: 7
 
 resilience4j:
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 10s
+    instances:
+      subscriptionServiceCB:
+        base-config: default
   circuitbreaker:
     configs:
       default:
@@ -171,6 +189,10 @@ resilience4j:
         base-config: default
       taskServiceCB:
         base-config: default
+      subscriptionServiceCB:
+        base-config: default
+        slow-call-duration-threshold:
+          seconds: 10
 
 
 

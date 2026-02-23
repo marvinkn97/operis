@@ -22,7 +22,9 @@ public class SubscriptionEntity {
     private UUID id;
     private UUID userId;  // Business identity (who owns the subscription)
     private String stripeCustomerId;
+    private String stripeCheckoutSessionId;
     private String stripeSubscriptionId;
+    @Enumerated(EnumType.STRING)
     private SubscriptionPlan plan; // FREE, PREMIUM
     private LocalDateTime startDate;
     private LocalDateTime endDate;

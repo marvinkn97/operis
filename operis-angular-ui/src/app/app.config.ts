@@ -13,6 +13,7 @@ import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 import { OAuthService, provideOAuthClient } from 'angular-oauth2-oidc';
 import { authConfig } from './auth/auth.config';
 import { AuthInterceptor } from './auth/auth.interceptor';
+import { SubscriptionsResource } from './subscription/subscription.resource';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -22,6 +23,7 @@ export const appConfig: ApplicationConfig = {
     provideOAuthClient(), // if using standalone API
     provideAppInitializer(() => {
       const oauthService = inject(OAuthService);
+      const subscriptions = inject(SubscriptionsResource);
       oauthService.configure(authConfig);
       oauthService.setupAutomaticSilentRefresh();
 
@@ -29,6 +31,13 @@ export const appConfig: ApplicationConfig = {
         // Remove auth code from URL
         if (window.location.search.includes('code=')) {
           window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Fire-and-forget: load subscription if logged in
+        if (oauthService.hasValidAccessToken()) {
+          subscriptions.loadMySubscription().catch(err => {
+            console.error('Failed to load subscription', err);
+          });
         }
       });
     }),

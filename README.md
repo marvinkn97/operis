@@ -1,5 +1,6 @@
-# OPERIS
+# OPERIS - Project Management System
 
+---
 The **Operis** project aims to simplify project management for businesses and individuals
 through a web application for workload management. This solution will allow for breaking
 down projects into tasks, distributing them among team members, and tracking their
@@ -14,33 +15,6 @@ In addition to its functionalities, Operis offers user account management and a 
 switch from free to premium mode, and vice versa. This approach will allow users to benefit
 from the features necessary for their needs while having the possibility to upgrade to more
 advanced features according to their requirements and budget.
----
-
-## Paid Features
-
-### 1. CSV Export of Project Tasks
-
-Users can export task data in CSV format using two mandatory filters:
-- **Status**
-- **Period**
-    - `start_date`
-    - `end_date`
-
-##### Example Exports
-- All tasks completed in **January 2024**.
-- All tasks in progress during **2024**.
-
-##### CSV Fields per Task
-Each exported row contains:
-
-- Task name
-- Description
-- Creation date
-- Owner
-- Date of last action
-- Identity of the person who performed the last action
-- Current status
-
 ---
 
 ## License

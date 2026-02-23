@@ -23,7 +23,8 @@ public class SecurityConfiguration {
                         c.requestMatchers(
                                         "/swagger-ui/**",
                                         "/v3/api-docs/**",
-                                        "/actuator/**"
+                                        "/actuator/**",
+                                        "/api/v1/subscriptions/stripe/webhook"
                                 )
                                 .permitAll()
                                 .anyRequest().authenticated())

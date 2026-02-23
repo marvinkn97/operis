@@ -25,7 +25,8 @@ public class SecurityConfiguration {
                         authorizeExchangeSpec.pathMatchers(
                                         "/swagger-ui/**",
                                         "/v3/api-docs/**",
-                                        "/actuator/**"
+                                        "/actuator/**",
+                                        "/api/v1/subscriptions/stripe/webhook"
                                 ).permitAll()
                                 .anyExchange().authenticated())
                 .oauth2ResourceServer(oAuth2ResourceServerSpec ->

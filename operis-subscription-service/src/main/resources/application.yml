@@ -95,5 +95,5 @@ eureka:
 
 stripe:
   secret-key: ${STRIPE_SECRET_KEY}
-  products:
-    operis-premium-plan: prod_U1jgvtU8ceDZW7
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  price-id: ${PRODUCT_PRICE_ID}

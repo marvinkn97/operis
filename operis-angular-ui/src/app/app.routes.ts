@@ -8,6 +8,7 @@ import { Profile } from './users/profile/profile';
 import { ActionCenter } from './actions/action-center/action-center';
 import { AuthCallbackComponent } from './auth/auth-callback';
 import { AssignedTasksPage } from './tasks/tasks-page';
+import { Subscription } from './subscription/subscription';
 
 export const routes: Routes = [
   { path: '', component: GetStarted }, // unprotected landing page,
@@ -25,6 +26,11 @@ export const routes: Routes = [
   {
     path: 'action-center',
     component: ActionCenter,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'upgrade',
+    component: Subscription,
     canActivate: [AuthGuard],
   },
   {

@@ -1,5 +1,6 @@
 package dev.marvin;
 
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @Override
@@ -67,7 +69,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ProblemDetail> handleBadRequest(BadRequestException ex, WebRequest request
     ) {
-
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 ex.getMessage()
@@ -83,7 +84,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ProblemDetail> handleNotFound(ResourceNotFoundException ex, WebRequest request
     ) {
-
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND,
                 ex.getMessage()

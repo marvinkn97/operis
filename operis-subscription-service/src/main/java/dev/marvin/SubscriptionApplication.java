@@ -1,8 +1,12 @@
 package dev.marvin;
 
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.core.Authentication;
@@ -18,6 +22,16 @@ import java.util.UUID;
 public class SubscriptionApplication implements AuditorAware<UUID> {
     static void main(String[] args){
         SpringApplication.run(SubscriptionApplication.class, args);
+    }
+
+    @Bean
+    public OpenAPI openAPI(Components components) {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Operis User Service API")
+                        .description("API documentation for Operis Subscription Service")
+                        .version("1.0"))
+                .components(components);
     }
 
     @Override
