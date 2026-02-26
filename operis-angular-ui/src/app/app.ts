@@ -1,7 +1,7 @@
 import { Component} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { Navbar } from "./shared/components/navbar/navbar";
-import { AiChatOverlay } from "./shared/components/ai-chat/ai-chat";
+import { Navbar } from "./shared/navbar/navbar";
+import { AiChatOverlay } from "./shared/ai-chat/ai-chat";
 
 
 @Component({
@@ -10,7 +10,7 @@ import { AiChatOverlay } from "./shared/components/ai-chat/ai-chat";
   template: `
   <app-navbar></app-navbar>
   <router-outlet></router-outlet>
-  <app-ai-chat-overlay></app-ai-chat-overlay> 
+  <app-ai-chat-overlay></app-ai-chat-overlay>
   `,
   styleUrl: './app.css',
 })

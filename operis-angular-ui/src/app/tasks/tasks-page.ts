@@ -1,95 +1,111 @@
 import { Component, HostListener, signal } from '@angular/core';
 import { Task } from './task.model';
 import { TaskResource } from './task.resource';
+import { NgClass } from '@angular/common';
 
 @Component({
   selector: 'app-assigned-tasks',
+  imports: [NgClass],
   standalone: true,
   template: `
-    <div class="p-4 sm:p-6 max-w-6xl mx-auto">
-      <!-- Header -->
-      <h1 class="text-2xl sm:text-3xl font-bold mb-2">My Assigned Tasks</h1>
-      <p class="text-gray-600 mb-6">You have {{ totalTasks() }} assigned tasks.</p>
-
-      <!-- Desktop Table Header -->
-      <div class="hidden sm:grid grid-cols-[1fr_2fr_120px_120px_150px] gap-4 bg-gray-50 px-4 py-3 rounded-xl font-semibold text-gray-600 mb-3">
-        <span>Title</span>
-        <span>Description</span>
-        <span class="text-center">Due Date</span>
-        <span class="text-center">Priority</span>
-        <span class="text-right">Actions</span>
-      </div>
-
-      <!-- Task List -->
-      <div class="space-y-3">
-        @for (task of tasks(); track task.id) {
-          <!-- MOBILE layout -->
-          <div class="bg-white rounded-xl shadow hover:shadow-md transition p-4 sm:hidden flex flex-col gap-2">
-            <div class="flex justify-between items-center">
-              <span class="font-semibold">{{ task.title }}</span>
-              <span class="text-gray-500 text-xs">Due: {{ task.dueDate || 'N/A' }}</span>
-            </div>
-            <p class="text-gray-700 text-sm">{{ task.description }}</p>
-            <span class="px-2 py-1 rounded-full text-xs font-semibold" [class]="getPriorityClass(task.priority)">
-              {{ task.priority || 'NORMAL' }}
-            </span>
-            <button (click)="completeTask(task)"
-                    class="w-full px-3 py-2 rounded-lg border border-green-500 text-green-600 text-sm font-medium hover:bg-green-50 transition">
-              Mark Completed
-            </button>
+    <div class="min-h-screen bg-[#fafafa] pt-24 pb-12 px-6">
+      <div class="max-w-6xl mx-auto">
+        
+        <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h1 class="text-4xl font-black text-slate-900 tracking-tight">Task Ledger</h1>
+            <p class="text-slate-500 mt-2 font-medium">
+              You are currently managing <span class="text-slate-900 font-bold underline decoration-emerald-500/30">{{ totalTasks() }} assigned</span> objectives.
+            </p>
           </div>
+          
+          <div class="px-4 py-2 bg-white border border-slate-200 rounded-2xl shadow-sm flex items-center gap-3">
+            <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-[10px] font-black uppercase tracking-widest text-slate-600">System Ready</span>
+          </div>
+        </div>
 
-          <!-- DESKTOP layout -->
-          <div class="hidden sm:grid grid-cols-[1fr_2fr_120px_120px_150px] gap-4 items-center bg-white rounded-xl shadow p-4 hover:shadow-md transition">
-            <div class="text-gray-700 font-semibold">{{ task.title }}</div>
-            <div class="text-gray-700 text-sm">{{ task.description }}</div>
-            <div class="text-gray-500 text-sm text-center">{{ task.dueDate || 'N/A' }}</div>
-            <div class="text-center">
-              <span class="px-2 py-1 rounded-full text-xs font-semibold" [class]="getPriorityClass(task.priority)">
-                {{ task.priority || 'NORMAL' }}
-              </span>
-            </div>
-            <div class="flex justify-end">
+        <div
+          class="hidden sm:grid grid-cols-[1fr_2fr_120px_120px_160px] gap-6 bg-slate-900 text-white px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] mb-4 shadow-xl shadow-slate-900/10"
+        >
+          <span>Objective</span>
+          <span>Brief</span>
+          <span class="text-center">Deadline</span>
+          <span class="text-center">Priority</span>
+          <span class="text-right">Command</span>
+        </div>
+
+        <div class="space-y-3">
+          @for (task of tasks(); track task.id) {
+            <div class="bg-white rounded-2xl border border-slate-200/60 p-5 sm:hidden flex flex-col gap-4 shadow-sm">
+              <div class="flex justify-between items-start">
+                <div class="space-y-1">
+                  <span class="text-xs font-black text-slate-900 leading-tight block">{{ task.title }}</span>
+                  <span class="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-tighter">Due: {{ task.dueDate || 'N/A' }}</span>
+                </div>
+                <span class="px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border" [ngClass]="getPriorityClass(task.priority)">
+                  {{ task.priority || 'NORMAL' }}
+                </span>
+              </div>
+              <p class="text-slate-600 text-sm leading-relaxed">{{ task.description }}</p>
               <button (click)="completeTask(task)"
-                      class="px-3 py-1.5 rounded-lg border border-green-500 text-green-600 text-sm font-medium hover:bg-green-50 transition">
-                Mark Completed
+                      class="w-full py-3 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 transition active:scale-95">
+                Execute Completion
               </button>
             </div>
-          </div>
-        }
+
+            <div class="hidden sm:grid grid-cols-[1fr_2fr_120px_120px_160px] gap-6 items-center bg-white border border-slate-200/60 rounded-2xl px-6 py-4 hover:shadow-md transition-all duration-300 group">
+              <div class="text-sm font-black text-slate-900 tracking-tight group-hover:text-emerald-600 transition-colors">{{ task.title }}</div>
+              <div class="text-sm text-slate-500 font-medium line-clamp-2 italic leading-snug">{{ task.description }}</div>
+              <div class="text-[11px] font-mono text-slate-400 text-center uppercase">{{ task.dueDate || 'N/A' }}</div>
+              <div class="flex justify-center">
+                <span class="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border" [ngClass]="getPriorityClass(task.priority)">
+                  {{ task.priority || 'NORMAL' }}
+                </span>
+              </div>
+              <div class="flex justify-end">
+                <button (click)="completeTask(task)"
+                        class="px-4 py-2.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-600 transition shadow-lg shadow-slate-900/5 active:scale-95">
+                  Complete
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="mt-12">
+          @if (loading()) {
+            <div class="flex justify-center p-8">
+               <div class="w-6 h-6 border-2 border-slate-200 border-t-slate-900 rounded-full animate-spin"></div>
+            </div>
+          }
+
+          @if (!loading() && tasks().length > 0 && tasks().length >= totalTasks()) {
+            <p class="text-center text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">End of Ledger</p>
+          }
+
+          @if (!loading() && tasks().length === 0) {
+            <div class="text-center py-20 border-2 border-dashed border-slate-200 rounded-4xl bg-white/50">
+              <div class="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">✓</div>
+              <p class="text-lg font-black text-slate-900 tracking-tight">Workspace Clear</p>
+              <p class="text-slate-400 text-[10px] font-bold mt-1 uppercase tracking-widest">All objectives successfully executed</p>
+            </div>
+          }
+        </div>
       </div>
 
-      <!-- Loading -->
-      @if (loading()) {
-        <p class="mt-6 text-center text-gray-500">Loading tasks...</p>
+      @if (successMessage()) {
+        <div class="fixed bottom-8 right-8 z-200 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-2xl font-bold animate-in slide-in-from-right duration-300">
+          {{ successMessage() }}
+        </div>
       }
 
-      <!-- No More -->
-      @if (!loading() && tasks().length > 0 && tasks().length >= totalTasks()) {
-        <p class="mt-6 text-center text-gray-400">No more tasks</p>
-      }
-
-      <!-- Empty State -->
-      @if (!loading() && tasks().length === 0) {
-        <div class="mt-12 text-center text-gray-500">
-          <p class="text-lg font-medium">No assigned tasks</p>
-          <p class="text-sm mt-1">You're all caught up</p>
+      @if (errorMessage()) {
+        <div class="fixed bottom-8 right-8 z-200 bg-red-600 text-white px-6 py-4 rounded-2xl shadow-2xl font-bold animate-in slide-in-from-right duration-300">
+          {{ errorMessage() }}
         </div>
       }
     </div>
-
-      <!-- Accept notifications -->
-    @if (successMessage()) {
-      <div class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded shadow">
-        {{ successMessage() }}
-      </div>
-    }
-
-    @if (errorMessage()) {
-      <div class="fixed bottom-6 right-6 bg-red-600 text-white px-4 py-2 rounded shadow">
-        {{ errorMessage() }}
-      </div>
-    }
   `,
 })
 export class AssignedTasksPage {
@@ -134,12 +150,13 @@ export class AssignedTasksPage {
     });
   }
 
+
   getPriorityClass(priority?: string) {
     switch (priority) {
-      case 'HIGH': return 'bg-red-100 text-red-800';
-      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
-      case 'LOW': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'HIGH': return 'bg-red-50 text-red-600 border-red-100';
+      case 'MEDIUM': return 'bg-amber-50 text-amber-600 border-amber-100';
+      case 'LOW': return 'bg-blue-50 text-blue-600 border-blue-100';
+      default: return 'bg-slate-50 text-slate-500 border-slate-200';
     }
   }
 

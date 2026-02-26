@@ -9,299 +9,340 @@ import { User } from '../../users/user.model';
 import { ProjectInvitationsResource } from '../project-invitations.resource';
 import { TaskResource } from '../../tasks/task.resource';
 import { Task, TaskPriority, TaskRequest } from '../../tasks/task.model';
-import { Action } from '../../actions/action-center/action.model';
 
 @Component({
   selector: 'app-project-details-page',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    <div class="p-6 max-w-7xl mx-auto space-y-8">
-      <!-- Back button -->
-      <div>
-        <a
-          routerLink="/projects"
-          class="inline-flex items-center gap-1 text-sm px-3 py-1 rounded border text-gray-600 hover:bg-gray-100 transition"
-        >
-          ← Back to Projects
-        </a>
-      </div>
+    <div class="min-h-screen bg-[#fafafa] pt-24 pb-12 px-6 relative overflow-hidden">
+      <div
+        class="absolute top-0 right-0 w-96 h-96 bg-blue-50/40 rounded-full blur-[120px] -z-10"
+      ></div>
 
-      <!-- 🔄 LOADING SKELETON -->
-      @if (loading()) {
-        <div class="space-y-6 animate-pulse">
-          <!-- Header skeleton -->
-          <div class="bg-white rounded-xl shadow-sm p-6 space-y-4">
-            <div class="h-8 w-1/3 bg-gray-200 rounded"></div>
-            <div class="h-4 w-2/3 bg-gray-200 rounded"></div>
-            <div class="h-4 w-full bg-gray-200 rounded"></div>
-          </div>
-
-          <!-- Members skeleton -->
-          <div class="bg-white rounded-xl shadow-sm p-6 space-y-3">
-            <div class="h-6 w-40 bg-gray-200 rounded"></div>
-            <div class="h-12 bg-gray-200 rounded"></div>
-            <div class="h-12 bg-gray-200 rounded"></div>
-          </div>
-
-          <!-- Tasks skeleton -->
-          <div class="bg-white rounded-xl shadow-sm p-6 space-y-4">
-            <div class="h-6 w-32 bg-gray-200 rounded"></div>
-            <div class="h-16 bg-gray-200 rounded"></div>
-            <div class="h-16 bg-gray-200 rounded"></div>
-          </div>
+      <div class="max-w-7xl mx-auto space-y-8 relative z-10">
+        <div class="flex items-center">
+          <a
+            routerLink="/projects"
+            class="group inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+          >
+            <span class="group-hover:-translate-x-1 transition-transform">←</span> Back to Projects
+          </a>
         </div>
-      }
 
-      @if (!loading()) {
-        <!-- Project header -->
-        <section class="bg-white rounded-xl shadow-sm p-6">
-          <h1 class="text-3xl font-bold">{{ project()?.name }}</h1>
-          <p class="text-gray-600 mt-2">{{ project()?.description }}</p>
-
-          <div class="mt-4">
-            <div class="w-full bg-gray-200 rounded-full h-4">
-              <div
-                class="bg-blue-600 h-4 rounded-full transition-all"
-                [style.width.%]="project()?.progressPercentage || 0"
-              ></div>
+        @if (loading()) {
+          <div class="space-y-6 animate-pulse">
+            <div class="bg-white rounded-2xl border border-slate-100 p-8 space-y-4">
+              <div class="h-10 w-1/4 bg-slate-100 rounded-lg"></div>
+              <div class="h-4 w-1/2 bg-slate-50 rounded"></div>
+              <div class="h-2 w-full bg-slate-50 rounded-full mt-8"></div>
             </div>
-            <p class="text-sm text-gray-500 mt-1">
-              Progress: {{ project()?.progressPercentage || 0 }}%
-            </p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div class="h-64 bg-white rounded-2xl border border-slate-100 p-8"></div>
+              <div class="h-64 bg-white rounded-2xl border border-slate-100 p-8"></div>
+            </div>
           </div>
+        }
 
-          <!-- Project actions -->
-          <div class="mt-4 flex gap-3">
-            @if (project()?.status !== 'COMPLETED') {
-              <button
-                (click)="markProjectCompleted()"
-                class="text-sm px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                ✓ Mark as Completed
-              </button>
-            }
-            @if (project()?.status === 'COMPLETED') {
-              <span class="text-sm px-3 py-1 rounded-full bg-green-100 text-green-800">
-                Completed
-              </span>
-            }
-          </div>
-        </section>
+        @if (!loading()) {
+          <section
+            class="bg-white rounded-3xl border border-slate-200/60 p-8 shadow-sm relative overflow-hidden"
+          >
+            <div class="relative z-10">
+              <div class="flex flex-col md:flex-row justify-between items-start gap-6">
+                <div class="space-y-2">
+                  <h1 class="text-4xl font-black text-slate-900 tracking-tight">
+                    {{ project()?.name }}
+                  </h1>
+                  <p class="text-slate-500 max-w-2xl leading-relaxed font-medium">
+                    {{ project()?.description }}
+                  </p>
+                </div>
 
-        <!-- Members + Tasks -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Members -->
-          <section class="bg-white rounded-xl shadow-sm p-6 lg:col-span-full">
-            <div class="flex justify-between items-center mb-2">
-              <h2 class="text-base font-semibold text-gray-800 flex items-center gap-1">
-                Team Members ({{ project()?.memberCount }})
-              </h2>
-              <div class="flex items-center gap-2">
-                <button
-                  (click)="toggleMembers()"
-                  class="text-gray-500 hover:text-gray-900"
-                  aria-label="Toggle members"
-                >
-                  <svg
-                    [class.rotate-90]="membersExpanded()"
-                    class="w-4 h-4 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
+                <div class="flex gap-3">
+                  @if (project()?.status !== 'COMPLETED') {
+                    <button
+                      (click)="markProjectCompleted()"
+                      class="px-5 py-2.5 bg-slate-900 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-slate-800 transition shadow-lg shadow-slate-900/10"
+                    >
+                      ✓ Complete Project
+                    </button>
+                  }
+                  @if (project()?.status === 'COMPLETED') {
+                    <span
+                      class="px-5 py-2.5 rounded-xl bg-emerald-50 text-emerald-600 text-xs font-bold uppercase tracking-widest border border-emerald-100"
+                    >
+                      Project Completed
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <div class="mt-10">
+                <div class="flex justify-between items-end mb-3">
+                  <span
+                    class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 font-mono"
+                    >Project Completion</span
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M9 5l7 7-7 7"
-                    ></path>
-                  </svg>
-                </button>
-                <button
-                  (click)="showInviteMember.set(true)"
-                  class="text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  <span class="text-2xl font-black text-slate-900 tabular-nums">
+                    {{ project()?.progressPercentage || 0
+                    }}<span class="text-slate-900 ml-0.5">%</span>
+                  </span>
+                </div>
+
+                <div
+                  class="w-full bg-slate-200/50 rounded-full h-2.5 relative overflow-hidden border border-slate-100"
                 >
-                  + Invite
-                </button>
+                  <div
+                    class="h-full bg-emerald-500 transition-all duration-1000 ease-out"
+                    [style.width.%]="project()?.progressPercentage || 0"
+                  ></div>
+                </div>
+
+                <div class="mt-3 flex items-center justify-between">
+                  <p
+                    class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"
+                  >
+                    <span
+                      class="w-1.5 h-1.5 rounded-full"
+                      [class]="
+                        (project()?.progressPercentage || 0) === 100
+                          ? 'bg-emerald-500'
+                          : 'bg-slate-300'
+                      "
+                    ></span>
+                    {{
+                      (project()?.progressPercentage || 0) === 100
+                        ? 'Fully Optimized'
+                        : 'Active Workspace'
+                    }}
+                  </p>
+                </div>
               </div>
             </div>
-
-            <!-- Loading -->
-            @if (loadingMembers()) {
-              <p class="text-xs text-gray-500 mt-1">Loading members...</p>
-            }
-
-            <!-- Member list -->
-            @if (membersExpanded()) {
-              <ul class="space-y-4 mt-2">
-                @for (member of members(); track member.id) {
-                  <li
-                    class="flex justify-between items-center bg-white border rounded-xl p-2 text-sm"
-                  >
-                    <div class="flex items-center gap-2">
-                      <div
-                        class="w-6 h-6 rounded-full bg-gray-800 text-white flex items-center justify-center text-sm font-medium"
-                      >
-                        {{ member.firstName.charAt(0) }}{{ member.lastName.charAt(0) }}
-                      </div>
-                      <div class="text-gray-700">
-                        <p class="font-semibold">{{ member.firstName }} {{ member.lastName }}</p>
-                        <p class="text-sm text-gray-500">{{ member.email }}</p>
-                      </div>
-
-                      @if (member.id === ownerId()) {
-                        <span class="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded ml-2"
-                          >Owner</span
-                        >
-                      }
-                    </div>
-
-                    @if (member.id !== ownerId()) {
-                      <button
-                        class="text-red-600 text-xs hover:underline"
-                        (click)="removeMember(member.id)"
-                      >
-                        Remove
-                      </button>
-                    }
-                  </li>
-                }
-              </ul>
-
-              <!-- Load more -->
-              @if (membersHasMore() && !loadingMembers()) {
-                <button
-                  (click)="fetchMembers(membersPage())"
-                  class="text-sm text-blue-600 hover:underline mt-2"
-                >
-                  Load more
-                </button>
-              }
-            }
           </section>
 
-          <!-- Tasks -->
-          <section class="bg-white rounded-xl shadow-sm p-6 lg:col-span-full">
-            <div class="flex justify-between items-center mb-4">
-              <h2 class="text-base font-semibold">Tasks ({{ project()?.taskCount }})</h2>
-
-              <div class="flex items-center gap-2">
-                <!-- Toggle button (same UX as members) -->
-                <button
-                  (click)="toggleTasks()"
-                  class="text-gray-500 hover:text-gray-900"
-                  aria-label="Toggle tasks"
-                >
-                  <svg
-                    [class.rotate-90]="tasksExpanded()"
-                    class="w-4 h-4 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M9 5l7 7-7 7"
-                    ></path>
-                  </svg>
-                </button>
-
-                <button
-                  (click)="openTaskModal()"
-                  class="text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  + Add
-                </button>
-              </div>
-            </div>
-
-            @if (loadingTasks()) {
-              <p class="text-sm text-gray-500">Loading tasks...</p>
-            }
-
-            @if (tasksExpanded()) {
-              @if (tasks().length === 0 && !loadingTasks()) {
-                <p class="text-sm text-gray-500">No tasks created yet.</p>
-              }
-
-              <div class="space-y-4">
-                @for (task of tasks(); track task.id) {
-                  <div class="border rounded-xl p-4 hover:shadow-sm transition">
-                    <div class="flex justify-between items-start gap-4">
-                      <div>
-                        <h3 class="text-sm font-semibold">{{ task.title }}</h3>
-                        <p class="text-sm text-gray-600 mt-1">
-                          {{ task.description }}
-                        </p>
-                        <!-- 🔹 Assigned badge -->
-                        <span
-                          class="inline-block text-xs px-2 py-0.5 rounded-full mt-1 font-semibold"
-                          [class]="
-                            task.isAssigned
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          "
-                        >
-                          {{ task.isAssigned ? 'Assigned' : 'Not Assigned' }}
-                        </span>
-                      </div>
-
-                      <span
-                        class="text-xs px-3 py-1 rounded-full font-medium"
-                        [ngClass]="statusClass(task.status)"
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <section class="lg:col-span-4 space-y-4">
+              <div class="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                  <h2 class="text-sm font-black uppercase tracking-widest text-slate-900">
+                    Team <span class="text-slate-400 ml-1">{{ project()?.memberCount }}</span>
+                  </h2>
+                  <div class="flex items-center gap-1">
+                    <button
+                      (click)="toggleMembers()"
+                      class="p-2 hover:bg-slate-50 rounded-lg transition"
+                    >
+                      <svg
+                        [class.rotate-90]="membersExpanded()"
+                        class="w-4 h-4 text-slate-400 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        {{ task.status }}
-                      </span>
-                    </div>
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5l7 7-7 7"
+                        ></path>
+                      </svg>
+                    </button>
+                    <button
+                      (click)="showInviteMember.set(true)"
+                      class="px-3 py-1.5 bg-slate-900 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-slate-800 transition shadow-lg shadow-slate-900/10"
+                    >
+                      + Invite
+                    </button>
+                  </div>
+                </div>
+
+                @if (loadingMembers()) {
+                  <div class="flex justify-center p-4">
+                    <div
+                      class="w-5 h-5 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin"
+                    ></div>
                   </div>
                 }
+
+                @if (membersExpanded()) {
+                  <ul class="space-y-3">
+                    @for (member of members(); track member.id) {
+                      <li
+                        class="group flex justify-between items-center p-3 rounded-2xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100"
+                      >
+                        <div class="flex items-center gap-3">
+                          <div
+                            class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-sm"
+                          >
+                            {{ member.firstName.charAt(0) }}{{ member.lastName.charAt(0) }}
+                          </div>
+                          <div>
+                            <p class="text-sm font-bold text-slate-900">
+                              {{ member.firstName }} {{ member.lastName }}
+                            </p>
+                            <p class="text-[11px] text-slate-400 font-medium">{{ member.email }}</p>
+                          </div>
+                        </div>
+                        @if (member.id === ownerId()) {
+                          <span
+                            class="text-[9px] font-black uppercase tracking-tighter bg-amber-50 text-amber-600 px-2 py-0.5 rounded border border-amber-100"
+                            >Owner</span
+                          >
+                        } @else {
+                          <button
+                            (click)="removeMember(member.id)"
+                            class="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 transition"
+                          >
+                            <span class="text-xs font-bold">Remove</span>
+                          </button>
+                        }
+                      </li>
+                    }
+                  </ul>
+                  @if (membersHasMore() && !loadingMembers()) {
+                    <button
+                      (click)="fetchMembers(membersPage())"
+                      class="w-full mt-4 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-xl transition uppercase tracking-widest"
+                    >
+                      Load More
+                    </button>
+                  }
+                }
               </div>
+            </section>
 
-              @if (tasksHasMore() && !loadingTasks()) {
-                <button
-                  (click)="fetchTasks(tasksPage())"
-                  class="text-sm text-blue-600 hover:underline mt-2"
-                >
-                  Load more
-                </button>
-              }
-            }
-          </section>
-        </div>
-      }
+            <section class="lg:col-span-8 space-y-4">
+              <div class="bg-white rounded-3xl border border-slate-200/60 p-8 shadow-sm">
+                <div class="flex justify-between items-center mb-8">
+                  <h2 class="text-sm font-black uppercase tracking-widest text-slate-900">
+                    Tasks <span class="text-slate-400 ml-1">{{ project()?.taskCount }}</span>
+                  </h2>
+                  <div class="flex items-center gap-3">
+                    <button
+                      (click)="toggleTasks()"
+                      class="p-2 hover:bg-slate-50 rounded-lg transition"
+                    >
+                      <svg
+                        [class.rotate-90]="tasksExpanded()"
+                        class="w-4 h-4 text-slate-400 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5l7 7-7 7"
+                        ></path>
+                      </svg>
+                    </button>
+                    <button
+                      (click)="openTaskModal()"
+                      class="px-4 py-2 bg-slate-900 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-slate-800 transition shadow-lg shadow-slate-900/10"
+                    >
+                      + Add Task
+                    </button>
+                  </div>
+                </div>
 
-      <!-- Invite Member Modal -->
+                @if (tasksExpanded()) {
+                  @if (tasks().length === 0 && !loadingTasks()) {
+                    <div
+                      class="text-center py-12 border-2 border-dashed border-slate-100 rounded-2xl"
+                    >
+                      <p class="text-slate-400 font-medium text-sm">
+                        No tasks assigned to this workspace yet.
+                      </p>
+                    </div>
+                  }
+
+                  <div class="grid grid-cols-1 gap-4">
+                    @for (task of tasks(); track task.id) {
+                      <div
+                        class="group relative bg-white border border-slate-100 rounded-2xl p-5 hover:border-blue-200 hover:shadow-md transition-all"
+                      >
+                        <div class="flex justify-between items-start gap-4">
+                          <div class="space-y-1">
+                            <h3 class="text-base font-bold text-slate-900 leading-tight">
+                              {{ task.title }}
+                            </h3>
+                            <p class="text-sm text-slate-500 font-medium line-clamp-1 italic">
+                              {{ task.description }}
+                            </p>
+                            <div class="flex items-center gap-2 pt-2">
+                              <span
+                                class="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border"
+                                [class]="
+                                  task.isAssigned
+                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                    : 'bg-amber-50 text-amber-600 border-amber-100'
+                                "
+                              >
+                                {{ task.isAssigned ? 'Assigned' : 'Unassigned' }}
+                              </span>
+                            </div>
+                          </div>
+                          <span
+                            class="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg shadow-sm"
+                            [ngClass]="statusClass(task.status)"
+                          >
+                            {{ task.status }}
+                          </span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  @if (tasksHasMore() && !loadingTasks()) {
+                    <button
+                      (click)="fetchTasks(tasksPage())"
+                      class="w-full mt-6 py-3 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-xl transition uppercase tracking-widest border border-dashed border-blue-200"
+                    >
+                      Load More Tasks
+                    </button>
+                  }
+                }
+              </div>
+            </section>
+          </div>
+        }
+      </div>
+
       @if (showInviteMember()) {
-        <div class="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div class="bg-white p-6 rounded-xl shadow-xl w-96">
-            <h2 class="text-xl font-semibold mb-4">Invite Member</h2>
-            <div class="flex flex-col gap-4">
+        <div
+          class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-100 p-4"
+        >
+          <div
+            class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm border border-slate-100 animate-in zoom-in-95 duration-200"
+          >
+            <h2 class="text-2xl font-black text-slate-900 mb-2 tracking-tight">Invite Member</h2>
+            <p class="text-slate-500 text-sm mb-6">Expand your team for this project.</p>
+            <div class="space-y-4">
               <input
                 [(ngModel)]="inviteForm.name"
                 placeholder="Full name"
-                class="border rounded-lg p-2"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:border-blue-600 transition outline-none"
               />
               <input
                 [(ngModel)]="inviteForm.email"
                 placeholder="Email address"
                 type="email"
-                class="border rounded-lg p-2"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:border-blue-600 transition outline-none"
               />
             </div>
-            <div class="flex justify-end gap-3 mt-6">
+            <div class="flex gap-3 mt-8">
               <button
                 (click)="closeInviteModal()"
-                class="px-4 py-2 rounded-lg border hover:bg-gray-100"
+                class="flex-1 py-3 text-sm font-bold text-slate-400 hover:bg-slate-50 rounded-xl transition"
               >
                 Cancel
               </button>
               <button
                 (click)="inviteMember()"
-                class="px-4 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                class="flex-1 py-3 bg-slate-900 text-white text-sm font-bold rounded-xl shadow-lg hover:bg-slate-800 transition"
               >
                 Send Invite
               </button>
@@ -310,53 +351,76 @@ import { Action } from '../../actions/action-center/action.model';
         </div>
       }
 
-      <!-- Add Task Modal -->
       @if (showAddTask()) {
-        <div class="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div class="bg-white p-6 rounded-xl shadow-xl w-md">
-            <h2 class="text-xl font-semibold mb-4">Create Task</h2>
+        <div
+          class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-100 p-4"
+        >
+          <div
+            class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg border border-slate-100 animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]"
+          >
+            <h2 class="text-2xl font-black text-slate-900 mb-2 tracking-tight">Create Task</h2>
+            <p class="text-slate-500 text-sm mb-8">Define the objectives for this project phase.</p>
 
-            <div class="flex flex-col gap-4">
-              <!-- Title -->
-              <input
-                [(ngModel)]="newTask.title"
-                placeholder="Task title"
-                class="border rounded-lg p-2"
-              />
-
-              <!-- Description -->
-              <textarea
-                [(ngModel)]="newTask.description"
-                placeholder="Task description"
-                rows="3"
-                class="border rounded-lg p-2"
-              ></textarea>
-
-              <!-- Priority Dropdown -->
-              <div>
-                <label class="text-sm font-medium mb-1 block">Priority</label>
-                <select [(ngModel)]="newTask.priority" class="border rounded-lg p-2 w-full">
-                  <option value="" disabled>Select priority</option>
-                  <option value="LOW">LOW</option>
-                  <option value="MEDIUM">MEDIUM</option>
-                  <option value="HIGH">HIGH</option>
-                </select>
-              </div>
-
-              <!-- Due Date -->
-              <div>
-                <label class="text-sm font-medium mb-1 block">Due Date</label>
+            <div class="space-y-5">
+              <div class="space-y-1">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1"
+                  >Title</label
+                >
                 <input
-                  type="date"
-                  [(ngModel)]="newTask.dueDate"
-                  class="border rounded-lg p-2 w-full"
+                  [(ngModel)]="newTask.title"
+                  placeholder="Task title"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:border-blue-600 transition outline-none font-bold"
                 />
               </div>
 
-              <!-- Single Assignee Dropdown -->
-              <div>
-                <label class="text-sm font-medium mb-1 block">Assign Member</label>
-                <select [(ngModel)]="newTask.assigneeId" class="border rounded-lg p-2 w-full">
+              <div class="space-y-1">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1"
+                  >Description</label
+                >
+                <textarea
+                  [(ngModel)]="newTask.description"
+                  placeholder="Task description"
+                  rows="3"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:border-blue-600 transition outline-none font-medium"
+                ></textarea>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                  <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1"
+                    >Priority</label
+                  >
+                  <select
+                    [(ngModel)]="newTask.priority"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:border-blue-600 transition outline-none font-bold text-slate-700 appearance-none"
+                  >
+                    <option value="" disabled>Select</option>
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                  </select>
+                </div>
+
+                <div class="space-y-1">
+                  <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1"
+                    >Due Date</label
+                  >
+                  <input
+                    type="date"
+                    [(ngModel)]="newTask.dueDate"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:border-blue-600 transition outline-none font-bold text-slate-700"
+                  />
+                </div>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1"
+                  >Assign Member</label
+                >
+                <select
+                  [(ngModel)]="newTask.assigneeId"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:border-blue-600 transition outline-none font-bold text-slate-700 appearance-none"
+                >
                   <option [ngValue]="null" disabled>Select a member</option>
                   @for (member of taskAssignees(); track member.id) {
                     <option [ngValue]="member.id">
@@ -367,35 +431,40 @@ import { Action } from '../../actions/action-center/action.model';
               </div>
             </div>
 
-            <div class="flex justify-end gap-3 mt-6">
+            <div class="flex gap-3 mt-10">
               <button
                 (click)="closeTaskModal()"
-                class="px-4 py-2 rounded-lg border hover:bg-gray-100"
+                class="flex-1 py-4 text-sm font-bold text-slate-400 hover:bg-slate-50 rounded-2xl transition"
               >
                 Cancel
               </button>
               <button
                 (click)="createTask()"
-                class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                class="flex-1 py-4 bg-slate-900 text-white text-sm font-bold rounded-2xl shadow-xl hover:bg-slate-800 transition"
               >
-                Create
+                Create Task
               </button>
             </div>
           </div>
         </div>
       }
-    </div>
-    @if (errorMessage()) {
-      <div class="fixed bottom-6 right-6 bg-red-600 text-white px-4 py-2 rounded shadow">
-        {{ errorMessage() }}
-      </div>
-    }
 
-    @if (successMessage()) {
-      <div class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded shadow">
-        {{ successMessage() }}
-      </div>
-    }
+      @if (errorMessage()) {
+        <div
+          class="fixed bottom-8 right-8 z-200 bg-red-600 text-white px-6 py-4 rounded-2xl shadow-2xl font-bold animate-in slide-in-from-right duration-300"
+        >
+          {{ errorMessage() }}
+        </div>
+      }
+
+      @if (successMessage()) {
+        <div
+          class="fixed bottom-8 right-8 z-200 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-2xl font-bold animate-in slide-in-from-right duration-300"
+        >
+          {{ successMessage() }}
+        </div>
+      }
+    </div>
   `,
 })
 export class ProjectPage implements OnInit {
@@ -501,9 +570,9 @@ export class ProjectPage implements OnInit {
   // Tasks
   statusClass(status: Task['status']) {
     return {
-      TODO: 'bg-gray-200 text-gray-700',
-      IN_PROGRESS: 'bg-yellow-200 text-yellow-800',
-      COMPLETED: 'bg-green-100 text-green-800', // ✅ completed is green
+      TODO: 'bg-slate-50 text-slate-500 border-slate-200',
+      IN_PROGRESS: 'bg-amber-50 text-amber-600 border-amber-100',
+      COMPLETED: 'bg-emerald-50 text-emerald-600 border-emerald-100',
     }[status];
   }
 

@@ -1,22 +1,34 @@
-# OPERIS - Project Management System
+# OPERIS
+
+**Operis** is a streamlined workspace designed to simplify project management through architectural precision and real-time progress tracking.
 
 ---
-The **Operis** project aims to simplify project management for businesses and individuals
-through a web application for workload management. This solution will allow for breaking
-down projects into tasks, distributing them among team members, and tracking their
-progress, all while offering a comprehensive overview of the overall advancement.
 
-Operis's business model is based on the Freemium model, offering free basic features such
-as the creation, modification, and deletion of projects, as well as the management of
-members and tasks, among others. Advanced features, such as the CSV export of project
-tasks, will be available with a paid subscription.
+### ⚡ Core Features (Free)
+* **Project Ledger:** Create, update, and manage project lifecycles.
+* **Team Sync:** Seamlessly invite and manage workspace members via project invitations.
+* **Objective Tracking:** Break projects into tasks with priority and deadline management.
+* **System Health:** Real-time progress monitoring via the high-visibility Emerald dashboard.
 
-In addition to its functionalities, Operis offers user account management and a mechanism to
-switch from free to premium mode, and vice versa. This approach will allow users to benefit
-from the features necessary for their needs while having the possibility to upgrade to more
-advanced features according to their requirements and budget.
+### ✨ Premium Features ($5/mo)
+* **Operis AI Assistant:** Integrated neural engine for task summarization and workflow insights.
+* **Data Export:** Advanced CSV reporting and data auditing.
+* **Priority Access:** Early enrollment in new system modules.
+
 ---
 
-## License
+### 🛠 Technology Stack
 
-This project follows the Freemium model. Free features are available to all users, while premium features require a paid subscription.
+#### **Frontend**
+* **Framework:** Angular (Signals & Standalone Components)
+* **Styling:** Tailwind CSS (Systems Aesthetic)
+
+#### **Backend**
+* **Framework:** Spring Boot (Java)
+* **Security:** Keycloak (OIDC/OAuth2 Authentication & Authorization)
+* **Messaging:** RabbitMQ (Pub/Sub for asynchronous events and notifications)
+* **Payments:** Secure Stripe Integration
+
+---
+
+**Operis: Professional workload management, simplified.**
