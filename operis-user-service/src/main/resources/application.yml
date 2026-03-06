@@ -6,56 +6,11 @@ spring:
     name: operis-user-service
 
   config:
-    import: optional:configserver:/
+    import: optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}
 
   cloud:
     config:
-      discovery:
-        enabled: true
-        service-id: operis-configuration-server
-
-management:
-  server:
-    port: 9092
-  endpoints:
-    web:
-      exposure:
-        include:
-          - health
-          - busrefresh
-          - prometheus
-          - metrics
-  prometheus:
-    metrics:
-      export:
-        enabled: true
-  endpoint:
-    health:
-      show-details: always
-      probes:
-        enabled: true
-  health:
-    livenessstate:
       enabled: true
-    readinessstate:
-      enabled: true
-  tracing:
-    export:
-      otlp:
-        enabled: true
-      enabled: true
-    sampling:
-      probability: 1.0
-  opentelemetry:
-    tracing:
-      export:
-        otlp:
-          endpoint: http://localhost:4318/v1/traces
-          transport: http
-  otlp:
-    metrics:
-      export:
-        enabled: false
 
 logging:
   file:

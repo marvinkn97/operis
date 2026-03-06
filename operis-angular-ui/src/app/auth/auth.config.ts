@@ -12,5 +12,5 @@ export const authConfig: AuthConfig = {
   // silentRefreshRedirectUri: window.location.origin + '/assets/silent-refresh.html',
   // useSilentRefresh: false,
   postLogoutRedirectUri: window.location.origin,   // after logout
-
+  strictDiscoveryDocumentValidation: !environment.production, // ✅ ignore in dev
 };

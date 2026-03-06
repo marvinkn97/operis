@@ -5,76 +5,10 @@ spring:
   application:
     name: operis-subscription-service
   config:
-    import: optional:configserver:/
+    import: optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}
   cloud:
     config:
-      discovery:
-        enabled: true
-        service-id: operis-configuration-server
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:9000/realms/operis
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: operis
-    password: password
-  datasource:
-    driver-class-name: org.postgresql.Driver
-    username: postgres
-    password: password
-    url: jdbc:postgresql://localhost:54325/operis_subscription_db
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-
-management:
-  server:
-    port: 9096
-  endpoints:
-    web:
-      exposure:
-        include:
-          - health
-          - busrefresh
-          - prometheus
-          - metrics
-  prometheus:
-    metrics:
-      export:
-        enabled: true
-  endpoint:
-    health:
-      show-details: always
-      probes:
-        enabled: true
-  health:
-    livenessstate:
       enabled: true
-    readinessstate:
-      enabled: true
-  tracing:
-    export:
-      otlp:
-        enabled: true
-    sampling:
-      probability: 1.0
-  opentelemetry:
-    tracing:
-      export:
-        otlp:
-          endpoint: http://localhost:4318/v1/traces
-          transport: http
-  otlp:
-    metrics:
-      export:
-        enabled: false
 
 logging:
   file:
@@ -84,16 +18,8 @@ logging:
       max-file-size: 10MB
       max-history: 7
 
-eureka:
-  instance:
-    instance-id: ${spring.application.name}:${random.value}
-  client:
-    register-with-eureka: true
-    fetch-registry: true
-    service-url:
-      defaultZone: http://localhost:8761/eureka
-
 stripe:
   secret-key: ${STRIPE_SECRET_KEY}
   webhook-secret: ${STRIPE_WEBHOOK_SECRET}
   price-id: ${PRODUCT_PRICE_ID}
+
